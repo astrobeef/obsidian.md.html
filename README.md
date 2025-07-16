@@ -1,7 +1,12 @@
 # Progress
 Goal is to have a CLI which can sweep a repo for all *.md files and convert them to .html, leveraging a template for styling.
 - [x] - Basic conversion working (no style; no header; no Obsidian specific conversions)
-- [ ] - Obsidian handling (wikilinks)
+- [ ] - Obsidian markdown handling
+    - [x] - wikilinks
+    - [x] - smart styling (spaces before certain items like lists, headings, tags)
+    - [ ] - Callouts (display notes with unique borders/styling)
+    - [ ] - Embedded notes/files
+    - [ ] - Wiki-style headers/section linking
 
 # Setting Up Environment
 To set up python environment, run these commands:

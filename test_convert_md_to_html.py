@@ -16,6 +16,7 @@ def _convert_md_to_html(
         verbose :bool = False,
 ):
     text_md = _replace_wikilinks(text_md, verbose=verbose)
+    text_md = _smart_insert_spacing(text_md)
     text_html = md.markdown(text_md)
     if verbose:
         print(f"------TO HTML------\n{text_html[:min(len(text_html), PREVIEW_LENGTH)]}{"..." if len(text_html) > PREVIEW_LENGTH else ""}\n-----END OF HTML-----")
@@ -38,6 +39,18 @@ def _replace_wikilinks(
         return html
     # regex to find all wikilinks [[<anything>]]
     return re.sub(r"\[\[([^\[\]]+)\]\]", i_replace, text_md)
+
+def _smart_insert_spacing(
+        text_md :str
+) -> str:
+    """Obsidian is smarter with markdown styling than traditional markdown displayers. For example, a list in markdown traditionally requires a space prior to note that it's a list. But Obsidian is smart enough to know it's a list and will display it as such."""
+    list_pattern = re.compile(
+        r"([^\n])\n(\s*(?:\d+\.\s+|\-\s+|\*\s+|\-\s*\[.\]\s+|\*\s*\[.\]\s+))"
+    )
+    text_md = list_pattern.sub(r"\1\n\n\2", text_md)
+    heading_pattern = re.compile(r"([^\n])\n(\s*#{1,6}\s+)")
+    text_md = heading_pattern.sub(r"\1\n\n\2", text_md)
+    return text_md
 
 #######
 # I/O #
