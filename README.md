@@ -1,12 +1,34 @@
+# Goal
+## What this is
+A CLI which sweeps through directories to convert markdown files to HTML, accounting for (ideally) all of Obsidian's unique markdown handlings.
+
+This lays the foundation for-- but does not provide-- advanced Obsidian features like the [interactive graph](https://help.obsidian.md/plugins/graph), [backlinks](https://help.obsidian.md/plugins/backlinks), and [outgoing links](https://help.obsidian.md/plugins/outgoing-links).
+
+## What this is not
+This does not automatically style the converted HTML to look like Obsidian. This program is meant to be a minimal framework for converting to HTML. With that said, all of Obsidian's unique stylings will have corresponding classes/ids/types so that clarity is not lost. For example, [Callouts](https://help.obsidian.md/callouts) will be wrapped in `<div>` blocks with the `callout` class. The `callout` class does not have any built-in stylings.
+
+Nor does this provide advanced Obsidian features.
+
 # Progress
-Goal is to have a CLI which can sweep a repo for all *.md files and convert them to .html, leveraging a template for styling.
 - [x] - Basic conversion working (no style; no header; no Obsidian specific conversions)
 - [ ] - Obsidian markdown handling
     - [x] - wikilinks
     - [x] - smart styling (spaces before certain items like lists, headings, tags)
-    - [ ] - Callouts (display notes with unique borders/styling)
+    - [ ] - Anchors
+    - [ ] - Block references
+    - [ ] - Callouts (encapsulate callout notes with unique classes based on callout type)
     - [ ] - Embedded notes/files
     - [ ] - Wiki-style headers/section linking
+    - [ ] - Tasks
+    - [ ] - Tags
+    - [ ] - Code inline
+    - [ ] - Code blocks
+    - [ ] - YAML
+    - [ ] - Footnotes
+    - [ ] - Math
+    - [ ] - Highlighting
+    - [ ] - Strikethrough
+    - [ ] - Comments
 
 # Setting Up Environment
 To set up python environment, run these commands:

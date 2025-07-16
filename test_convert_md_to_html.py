@@ -22,6 +22,10 @@ def _convert_md_to_html(
         print(f"------TO HTML------\n{text_html[:min(len(text_html), PREVIEW_LENGTH)]}{"..." if len(text_html) > PREVIEW_LENGTH else ""}\n-----END OF HTML-----")
     return text_html
 
+###############
+## Wikilinks ##
+###############
+
 def _replace_wikilinks(
         text_md :str,
         verbose :bool = False
@@ -32,7 +36,10 @@ def _replace_wikilinks(
             target, display = inner.split("|", 1)
         else:
             target, display = inner, inner
-        # !!! NOTE : Need to handle anchors before we convert path
+        if _has_anchor(target):
+            target = _replace_heading_anchor(target, verbose=verbose)
+        elif _has_block_ref(target):
+            target = _replace_block_reference(target, verbose=verbose)
         href = _path_md_to_html(target, verbose=verbose)
         html = f'<a href="{href}">{display.strip()}</a>'
         if verbose:
@@ -40,6 +47,35 @@ def _replace_wikilinks(
         return html
     # regex to find all wikilinks [[<anything>]]
     return re.sub(r"\[\[([^\[\]]+)\]\]", i_replace, text_md)
+
+def _has_anchor(
+        heading :str,
+) -> bool:
+    return "#" in heading
+
+def _replace_heading_anchor(
+        heading :str,
+        verbose :bool = False
+) -> str:
+    raise ValueError("Not implemented")
+    return heading
+
+def _has_block_ref(
+        heading :str,
+) -> bool:
+    return "^" in heading
+
+# NOTE: I may not implement this since I never use block references personally.
+def _replace_block_reference(
+        heading :str,
+        verbose :bool = False
+) -> str:
+    raise ValueError("Not implemented")
+    return heading
+
+#######################
+## Smart Adjustments ##
+#######################
 
 def _smart_insert_spacing(
         text_md :str
@@ -52,6 +88,165 @@ def _smart_insert_spacing(
     heading_pattern = re.compile(r"([^\n])\n(\s*#{1,6}\s+)")
     text_md = heading_pattern.sub(r"\1\n\n\2", text_md)
     return text_md
+
+####################
+## Callouts/Notes ##
+####################
+
+def _replace_callouts(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    """See [Callouts](https://help.obsidian.md/callouts) for documentation."""
+    return ""
+
+############
+## Embeds ##
+############
+
+def _replace_embeds(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    text_md = _replace_embedded_md(text_md, verbose=verbose)
+    text_md = _replace_embedded_images(text_md, verbose=verbose)
+    _catch_embedded_misc(text_md, verbose=verbose)
+    return ""
+
+def _replace_embedded_md(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    return ""
+
+def _replace_embedded_images(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    return ""
+
+def _catch_embedded_misc(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    return ""
+
+###########
+## Tasks ##
+###########
+
+def _replace_tasks(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    return ""
+
+##########
+## Tags ##
+##########
+
+def _replace_tags(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    return ""
+
+##########
+## Code ##
+##########
+
+def _replace_code_inline(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    """Example: `int x = 10`"""
+    return ""
+
+def _replace_code_blocks(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    """Example:
+    ~~~python
+    var x = 10
+    ~~~
+    """
+    return ""
+
+##########
+## YAML ##
+##########
+
+# NOTE: I may not implement this since I never use YAML metadata personally.
+def _replace_YAML(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    return ""
+
+############
+## Tables ##
+############
+
+# NOTE: This may already be handled by the markdown plugin
+def _replace_tables(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    return ""
+
+###############
+## Footnotes ##
+###############
+
+def _replace_footnotes(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    return ""
+
+##########
+## Math ##
+##########
+
+# NOTE: I may not implement this since I never use math inline/blocks.
+def _replace_math(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    return ""
+
+###############
+## Highlight ##
+###############
+
+def _replace_highlight(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    return ""
+
+###################
+## Strikethrough ##
+###################
+
+# NOTE: This may already be handled by the markdown plugin
+def _replace_strikethrough(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    return ""
+
+##############
+## Comments ##
+##############
+
+# NOTE: I may not implement this since I never use comments.
+def _replace_comments(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    return ""
 
 #######
 # I/O #
