@@ -32,6 +32,7 @@ def _replace_wikilinks(
             target, display = inner.split("|", 1)
         else:
             target, display = inner, inner
+        # !!! NOTE : Need to handle anchors before we convert path
         href = _path_md_to_html(target, verbose=verbose)
         html = f'<a href="{href}">{display.strip()}</a>'
         if verbose:
