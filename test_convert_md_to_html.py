@@ -72,7 +72,9 @@ def _path_md_to_html(
         path_md :str,
         verbose :bool = False
 ) -> str:
-    base, _ = path.splitext(path_md)
+    base, type = path.splitext(path_md)
+    if type != "" and type != ".md":
+        return path_md
     base_encoded = quote(base, safe="/")
     path_html = f"{base_encoded}.html"
     if verbose:
