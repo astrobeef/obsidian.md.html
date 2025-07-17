@@ -1,6 +1,7 @@
 # Third-party
 import markdown as md
 from markdown.extensions.toc import TocExtension as tocExt
+from bs4 import BeautifulSoup as BS
 # First-party
 from urllib.parse import quote
 from os import path
@@ -12,8 +13,9 @@ PREVIEW_LENGTH = 512#characters
 EMBED_MARKDOWN_CLASS = "embed-markdown"
 EMBED_IMAGE_CLASS = "embed-image"
 EMBED_IMAGE_DATA_WIDTH = "data-width"
-INTERNAL_LINK_CLASS = "internal-link"
-EXTERNAL_LINK_CLASS = "external-link"
+INTERNAL_LINK_CLASS = "link-internal"
+EXTERNAL_LINK_CLASS = "link-external"
+WIKILINK_LINK_CLASS = "link-wikilink"
 
 ##############
 # CONVERSION #
@@ -27,6 +29,7 @@ def _convert_md_to_html(
     text_md = _replace_wikilinks(text_md, verbose=verbose)
     text_md = _smart_insert_spacing(text_md)
     text_html = md.markdown(text_md, extensions=["toc"])
+    text_html = _mark_link_types(text_html, verbose=verbose)
     if verbose:
         print(f"------TO HTML------\n{text_html[:min(len(text_html), PREVIEW_LENGTH)]}{"..." if len(text_html) > PREVIEW_LENGTH else ""}\n-----END OF HTML-----")
     return text_html
@@ -44,7 +47,7 @@ def _replace_wikilinks(
         target, display = _parse_obsidian_link(inner)
         base, anchor = _split_anchor(target)
         href = _convert_md_href_to_html(base, anchor)
-        html = f'<a href="{href}">{display}</a>'
+        html = f'<a href="{href}" class="{WIKILINK_LINK_CLASS}">{display}</a>'
         if verbose:
             print(f'Converted wikilink "[[{inner}]]" to "{html}"')
         return html
@@ -338,6 +341,23 @@ def _replace_comments(
         verbose :bool = False
 ) -> str:
     return ""
+
+############################
+## Signify External Links ##
+############################
+
+def _mark_link_types(
+        text_html   :str,
+        verbose     :bool = True
+) -> str:
+    soup = BS(text_html, "html.parser")
+    for a in soup.find_all('a'):
+        href = a.get('href', '')
+        if href.startswith(('http://', 'https://', 'mailto:')):
+            a['class'] = (a.get('class', []) or []) + [f'{EXTERNAL_LINK_CLASS}']
+        elif href.endswith('.html'):
+            a['class'] = (a.get('class', []) or []) + [f'{INTERNAL_LINK_CLASS}']
+    return str(soup)
 
 #######
 # I/O #
