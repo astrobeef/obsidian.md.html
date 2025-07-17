@@ -1,8 +1,8 @@
 # Wikilinks Test
-This is an example markdown file linking to [[README.md|README]] using Obsidian wikilinks.
+This is an example markdown file linking to [[README]] using Obsidian wikilinks.
 
 # Spacing Test
-## Headings Test H2
+## Headings ++ Test H2
 #tag-test
 ## List test
 1. Hello
@@ -24,8 +24,8 @@ This is an example markdown file linking to [[README.md|README]] using Obsidian 
 
 
 # Embedded Notes/Files Test
-![[README.md]]
-![[_images/bruno.webp]]
+![[README]]
+![[_images/bruno.webp|300]]
 
 # Wiki Headers/Section Links
-[[README.md#Setting Up Environment]]
+[[README#Setting Up Environment]]

@@ -8,6 +8,13 @@ import re
 
 PREVIEW_LENGTH = 512#characters
 
+# Classes
+EMBED_MARKDOWN_CLASS = "embed-markdown"
+EMBED_IMAGE_CLASS = "embed-image"
+EMBED_IMAGE_DATA_WIDTH = "data-width"
+INTERNAL_LINK_CLASS = "internal-link"
+EXTERNAL_LINK_CLASS = "external-link"
+
 ##############
 # CONVERSION #
 ##############
@@ -16,6 +23,7 @@ def _convert_md_to_html(
         text_md :str,
         verbose :bool = False,
 ):
+    text_md = _replace_embeds(text_md, verbose=verbose)
     text_md = _replace_wikilinks(text_md, verbose=verbose)
     text_md = _smart_insert_spacing(text_md)
     text_html = md.markdown(text_md, extensions=["toc"])
@@ -33,48 +41,55 @@ def _replace_wikilinks(
 ) -> str:
     def i_replace(match):
         inner = match.group(1)
-        if "|" in inner:
-            target, display = inner.split("|", 1)
-        else:
-            target, display = inner, inner
-        if _has_anchor(target):
-            target = _replace_heading_anchor(target, verbose=verbose)
-        elif _has_block_ref(target):
-            target = _replace_block_reference(target, verbose=verbose)
-        href = _path_md_to_html(target, verbose=verbose)
-        html = f'<a href="{href}">{display.strip()}</a>'
+        target, display = _parse_obsidian_link(inner)
+        base, anchor = _split_anchor(target)
+        href = _convert_md_href_to_html(base, anchor)
+        html = f'<a href="{href}">{display}</a>'
         if verbose:
-            print(f"Converted wikilink \"{inner}\" to \"{html}\"")
+            print(f'Converted wikilink "[[{inner}]]" to "{html}"')
         return html
     # regex to find all wikilinks [[<anything>]]
     return re.sub(r"\[\[([^\[\]]+)\]\]", i_replace, text_md)
 
-def _has_anchor(
-        heading :str,
-) -> bool:
-    return "#" in heading
+def _parse_obsidian_link(inner :str):
+    """
+    Parses [[target|display]] or ![[target|display]]
+    """
+    if "|" in inner:
+        target, display = inner.split("|", 1)
+    else:
+        target, display = inner, inner
+    return target.strip(), display.strip()
 
-def _replace_heading_anchor(
-        heading :str,
-        verbose :bool = False
-) -> str:
-    if "#" not in heading:
-        return heading
-    base, anchor = heading.split("#", 1)
-    anchor_slug = _slugify_heading(anchor)
-    result = f"{base}#{anchor_slug}"
-    if verbose:
-        print(f"Converted heading anchor \"{heading}\" to \"{result}\"")
-    return result
+def _split_anchor(target :str):
+    if "#" in target:
+        base, anchor = target.split("#", 1)
+        return base.strip(), anchor.strip()
+    else:
+        return target.strip(), None
 
-def _slugify_heading(text):
+def _slugify_heading(text :str):
     """Matches Python-Markdown TOC/Obsidian style: lowercase, dashes for spaces, strip most punctuation."""
-    import re
     text = text.strip().lower()
     text = re.sub(r'[^\w\s-]', '', text)
     text = re.sub(r'\s+', '-', text)
     text = text.strip('-')
     return text
+
+def _convert_md_href_to_html(
+        base    :str,
+        anchor  :str =None
+) -> str:
+    if base.lower().endswith('.md'):
+        base = base[:-3]
+    base_encoded = quote(base, safe="/")
+    href = f"{base_encoded}.html"
+    if anchor:
+        slug = _slugify_heading(anchor)
+        href += f"#{slug}"
+    return href
+
+### Block refs ###
 
 def _has_block_ref(
         heading :str,
@@ -124,28 +139,88 @@ def _replace_embeds(
         text_md :str,
         verbose :bool = False
 ) -> str:
-    text_md = _replace_embedded_md(text_md, verbose=verbose)
     text_md = _replace_embedded_images(text_md, verbose=verbose)
     _catch_embedded_misc(text_md, verbose=verbose)
-    return ""
+    text_md = _replace_embedded_md(text_md, verbose=verbose)    # NOTE: Always run last, as it will treat any input file type as markdown
+    return text_md
 
+### Embed Markdown ###
+
+# NOTE: Does not embed markdown. Links to corresponding markdown HTML file.
 def _replace_embedded_md(
         text_md :str,
         verbose :bool = False
 ) -> str:
-    return ""
+    def i_replace(match):
+        inner = match.group(1)
+        target, display = _parse_obsidian_link(inner)
+        base, anchor = _split_anchor(target)
+        href = _convert_md_href_to_html(base, anchor)
+        html = f'<div class="{EMBED_MARKDOWN_CLASS}"><a href="{href}">{display}</a></div>'
+        if verbose:
+            print(f'Converted embed markdown "![[{inner}]]" to "{html}"')
+        return html
+    md_pattern = r'!\[\[([^\[\]|]+(?:(?:\.md))?(?:#[^\[\]|]+)?(?:\|[^\[\]]*)?)\]\]'
+    return re.sub(md_pattern, i_replace, text_md, flags=re.IGNORECASE)
+
+### Embed Images ###
 
 def _replace_embedded_images(
         text_md :str,
         verbose :bool = False
 ) -> str:
-    return ""
+    def i_replace(match):
+        inner = match.group(1)
+        if "|" in inner:
+            src, *opts = [s.strip() for s in inner.split("|")]
+            options = "|".join(opts)
+            alt, width = _parse_obsidian_image_options(options)
+        else:
+            src = inner.strip()
+            alt = src
+            width = None
+        html = f'<img src="{src}" class="{EMBED_IMAGE_CLASS}" alt="{alt}"'
+        if width:
+            html += f' {EMBED_IMAGE_DATA_WIDTH}="{width}"'
+        html += ">"
+        if verbose:
+            print(f'Converted embed image "![[{inner}]]" to "{html}"')
+        return html
+    image_pattern = r'!\[\[([^\[\]|]+\.(?:png|jpe?g|gif|svg|webp)(?:\|[^\[\]]*)*)\]\]'
+    return re.sub(image_pattern, i_replace, text_md, flags=re.IGNORECASE)
+
+def _parse_obsidian_image_options(options: str):
+    """
+    Parses Obsidian-style options like 'Alt text|400' or just '400'.
+    """
+    parts = [p.strip() for p in options.split("|")]
+    if len(parts) == 1:
+        if parts[0].isdigit():
+            return ("", parts[0])
+        else:
+            return (parts[0], None)
+    elif len(parts) == 2:
+        if parts[1].isdigit():
+            return (parts[0], parts[1])
+        else:
+            return (parts[0], None)
+    else:
+        return (options, None)
+
+### Embed Misc ###
 
 def _catch_embedded_misc(
         text_md :str,
         verbose :bool = False
 ) -> str:
-    return ""
+    misc_pattern = r'!\[\[([^\[\]|]+\.(?!md$)[^\[\]|]+)\]\]'
+    def i_replace(match):
+        inner = match.group(1)
+        message = f'Unhandled Obsidian embed: \"![[{inner}]]\"'
+        if verbose:
+            print(f'ERROR: {message}')
+        raise ValueError(message)
+    return re.sub(misc_pattern, i_replace, text_md, flags=re.IGNORECASE)
 
 ###########
 ## Tasks ##
