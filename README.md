@@ -43,3 +43,10 @@ To set up python environment, run these commands:
 
 ## Wikilinks
 Parsing wikilinks is pretty simple. A regex operation is used to find all occurrences, then those are replaced with HTML links. The current implementation assumes the path to the HTML is the same as the path to the MD.
+
+## Wikilink Anchors
+Obsidian allows for linking to headings within a note by using anchor syntax. In order to have this function as expected, all headings need to be given unique IDs. Luckily IDs can be easily inserted with the `markdown` plugin method extension "toc":
+~~~python
+    text_html = md.markdown(text_md, extensions=["toc"])
+~~~
+With the IDs made, the next step is to convert the markdown anchors to the TOC id format. For example, convert "Heading Example" to "heading-example", which can be done with regex.

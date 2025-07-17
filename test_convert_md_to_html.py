@@ -1,5 +1,6 @@
 # Third-party
 import markdown as md
+from markdown.extensions.toc import TocExtension as tocExt
 # First-party
 from urllib.parse import quote
 from os import path
@@ -17,7 +18,7 @@ def _convert_md_to_html(
 ):
     text_md = _replace_wikilinks(text_md, verbose=verbose)
     text_md = _smart_insert_spacing(text_md)
-    text_html = md.markdown(text_md)
+    text_html = md.markdown(text_md, extensions=["toc"])
     if verbose:
         print(f"------TO HTML------\n{text_html[:min(len(text_html), PREVIEW_LENGTH)]}{"..." if len(text_html) > PREVIEW_LENGTH else ""}\n-----END OF HTML-----")
     return text_html
@@ -57,8 +58,23 @@ def _replace_heading_anchor(
         heading :str,
         verbose :bool = False
 ) -> str:
-    raise ValueError("Not implemented")
-    return heading
+    if "#" not in heading:
+        return heading
+    base, anchor = heading.split("#", 1)
+    anchor_slug = _slugify_heading(anchor)
+    result = f"{base}#{anchor_slug}"
+    if verbose:
+        print(f"Converted heading anchor \"{heading}\" to \"{result}\"")
+    return result
+
+def _slugify_heading(text):
+    """Matches Python-Markdown TOC/Obsidian style: lowercase, dashes for spaces, strip most punctuation."""
+    import re
+    text = text.strip().lower()
+    text = re.sub(r'[^\w\s-]', '', text)
+    text = re.sub(r'\s+', '-', text)
+    text = text.strip('-')
+    return text
 
 def _has_block_ref(
         heading :str,
