@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup as BS
 from urllib.parse import quote
 from os import path
 import re
+import html
 
 PREVIEW_LENGTH = 512#characters
 
@@ -13,11 +14,17 @@ PREVIEW_LENGTH = 512#characters
 EMBED_MARKDOWN_CLASS    = "embed-markdown"
 EMBED_IMAGE_CLASS       = "embed-image"
 EMBED_IMAGE_DATA_WIDTH  = "data-width"
+EMBED_AUDIO_CLASS       = "embed-audio"
+EMBED_VIDEO_CLASS       = "embed-video"
+EMBED_PDF_CLASS         = "embed-pdf"
 INTERNAL_LINK_CLASS     = "link-internal"
 EXTERNAL_LINK_CLASS     = "link-external"
 WIKILINK_LINK_CLASS     = "link-wikilink"
 TAGS_CLASS              = "obsi-tag"
 TAGS_DATA               = "data-tag"
+CODE_LANG_CLASS_PREFIX  = "language-"
+CODE_BLOCK_CLASS        = "code-block"
+CODE_INLINE_CLASS       = "code-inline"
 
 ##############
 # CONVERSION #
@@ -28,12 +35,12 @@ def _convert_md_to_html(
         tags_use_links  :bool = False,
         verbose         :bool = False,
 ):
+    text_md = _smart_insert_spacing(text_md)
+    text_md = _smart_single_newlines(text_md, verbose=verbose)
+    text_md = _replace_code(text_md, verbose=verbose)
     text_md = _replace_embeds(text_md, verbose=verbose)
     text_md = _replace_wikilinks(text_md, verbose=verbose)
     text_md = _replace_tags(text_md, use_links=tags_use_links, verbose=verbose)
-
-    text_md = _smart_single_newlines(text_md, verbose=verbose)
-    text_md = _smart_insert_spacing(text_md)
     text_html = md.markdown(text_md, extensions=["toc", "pymdownx.tasklist"])
     text_html = _mark_link_types(text_html, verbose=verbose)
     if verbose:
@@ -127,17 +134,19 @@ def _smart_insert_spacing(
     text_md = list_pattern.sub(r"\1\n\n\2", text_md)
     heading_pattern = re.compile(r"([^\n])\n(\s*#{1,6}\s+)")
     text_md = heading_pattern.sub(r"\1\n\n\2", text_md)
+    code_fence_pattern = re.compile(r'([^\n])\n([ \t]*(?:```|~~~))')
+    text_md = code_fence_pattern.sub(r"\1\n\n\2", text_md)
     return text_md
 
-# NOTE: Order after code block replacement in pipeline. Otherwise code blocks will be affected by this.
 def _smart_single_newlines(
         text_md :str,
         verbose :bool
 ) -> str:
     """Obsidian is smarter with markdown styling than traditional markdown displayers. In typical markdown viewers, a series of text on newlines will not be respected. Instead, text will be snapped onto one line. In Obsidian, single newlines are respected. This is such a core part of Obsidian notes that it should be built into the converter."""
-    result = re.sub(r'([^\n])\n(?!\n)', r'\1  \n', text_md)
+    pattern = re.compile(r'([^\n])\n(?!\n)(?![ \t]*(?:```|~~~))')
+    result = pattern.sub(r'\1  \n', text_md)
     if verbose:
-        print("After newline preservation:\n" + result)
+        print("After single-newline preservation (code-fence lines skipped):\n", result)
     return result
 
 ####################
@@ -160,10 +169,12 @@ def _replace_embeds(
         verbose :bool = False
 ) -> str:
     text_md = _replace_embedded_images(text_md, verbose=verbose)
+    text_md = _replace_embedded_audio(text_md, verbose=verbose)
+    text_md = _replace_embedded_video(text_md, verbose=verbose)
+    text_md = _replace_embedded_pdf(text_md, verbose=verbose)
     _catch_embedded_misc(text_md, verbose=verbose)
     text_md = _replace_embedded_md(text_md, verbose=verbose)    # NOTE: Always run last, as it will treat any input file type as markdown
     return text_md
-
 ### Embed Markdown ###
 
 # NOTE: Does not embed markdown. Links to corresponding markdown HTML file.
@@ -227,6 +238,54 @@ def _parse_obsidian_image_options(options: str):
     else:
         return (options, None)
 
+### Embed Audio ###
+
+def _replace_embedded_audio(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    def i_replace(match):
+        inner = match.group(1)
+        src = inner.strip()
+        html = f'<audio controls class="{EMBED_AUDIO_CLASS}"><source src="{src}"></audio>'
+        if verbose:
+            print(f'Converted embed audio "![[{inner}]]" to "{html}"')
+        return html
+    audio_pattern = r'!\[\[([^\[\]|]+\.(?:mp3|wav|ogg|flac|m4a|aac|opus))\]\]'
+    return re.sub(audio_pattern, i_replace, text_md, flags=re.IGNORECASE)
+
+### Embed Video ###
+
+def _replace_embedded_video(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    def i_replace(match):
+        inner = match.group(1)
+        src = inner.strip()
+        html = f'<video controls class="{EMBED_VIDEO_CLASS}"><source src="{src}"></video>'
+        if verbose:
+            print(f'Converted embed video "![[{inner}]]" to "{html}"')
+        return html
+    video_pattern = r'!\[\[([^\[\]|]+\.(?:mp4|webm|ogv|mov|mkv))\]\]'
+    return re.sub(video_pattern, i_replace, text_md, flags=re.IGNORECASE)
+
+### Embed PDF ###
+
+def _replace_embedded_pdf(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    def i_replace(match):
+        inner = match.group(1)
+        src = inner.strip()
+        html = f'<embed src="{src}" type="application/pdf" class="{EMBED_PDF_CLASS}">'
+        if verbose:
+            print(f'Converted embed PDF "![[{inner}]]" to "{html}"')
+        return html
+    pdf_pattern = r'!\[\[([^\[\]|]+\.pdf)\]\]'
+    return re.sub(pdf_pattern, i_replace, text_md, flags=re.IGNORECASE)
+
 ### Embed Misc ###
 
 def _catch_embedded_misc(
@@ -289,23 +348,53 @@ def _replace_tags_without_links(text_md: str, verbose: bool = False) -> str:
 ## Code ##
 ##########
 
+def _replace_code(
+        text_md :str,
+        verbose :bool = False
+) -> str:
+    text_md = _replace_code_inline(text_md=text_md, verbose=verbose)
+    text_md = _replace_code_blocks(text_md=text_md, verbose=verbose)
+    return text_md
+
 def _replace_code_inline(
         text_md :str,
         verbose :bool = False
 ) -> str:
-    """Example: `int x = 10`"""
-    return ""
+    """
+    Replace inline code surrounded by single backticks (`)
+    """
+    def replacer(match):
+        code = match.group(1)
+        code_escaped = html.escape(code)
+        html_code = f'<code class="{CODE_INLINE_CLASS}">{code_escaped}</code>'
+        if verbose:
+            print(f"Converted inline code: `{code}` -> {html_code}")
+        return html_code
+    pattern = re.compile(r'(?<!`)\`([^\n`]+?)\`(?!`)', re.DOTALL)
+    return pattern.sub(replacer, text_md)
 
 def _replace_code_blocks(
         text_md :str,
         verbose :bool = False
 ) -> str:
-    """Example:
-    ~~~python
-    var x = 10
-    ~~~
     """
-    return ""
+    Convert fenced code blocks (```lang or ~~~lang)
+    """
+    def code_replacer(match):
+        fence = match.group(1)
+        lang = (match.group(2) or "").strip()
+        code = match.group(3)
+        code_escaped = html.escape(code)
+        class_attr = f' class="{CODE_LANG_CLASS_PREFIX}{lang} {CODE_BLOCK_CLASS}"' if lang else f"class={CODE_BLOCK_CLASS}"
+        html_block = f'<pre><code{class_attr}>{code_escaped}</code></pre>'
+        if verbose:
+            print(f"Converted code block ({lang!r}):\n{code}\n---")
+        return html_block
+    pattern = re.compile(
+        r'(?:^|\n)(```|~~~)[ \t]*([\w+-]*)[ \t]*\n(.*?)(?:\n\1[ \t]*\n?)',
+        re.DOTALL
+    )
+    return pattern.sub(code_replacer, text_md)
 
 ##########
 ## YAML ##

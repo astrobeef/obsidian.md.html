@@ -40,8 +40,13 @@ This is a note with a #tag inside.
 Should not be considered tags:
 (#tag1) , [#tag2] , {#tag}
 
+# Code Inline
+Some code: `int x = 10`
+
 # Code Block Test
+## Heading 2
 ~~~python
+    ## Comment that might be parsed like a heading
     def _convert_md_to_html(
             text_md         :str,
             tags_use_links  :bool = False,
