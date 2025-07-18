@@ -14,15 +14,15 @@ Nor does this provide advanced Obsidian features.
 - [ ] - Obsidian markdown handling
     - [x] - wikilinks
     - [x] - smart styling (spaces before certain items like lists, headings, tags)
-    - [ ] - Anchors
+    - [x] - Anchors
     - [ ] - Block references
     - [ ] - Callouts (encapsulate callout notes with unique classes based on callout type)
-    - [ ] - Embedded notes/files
-    - [ ] - Wiki-style headers/section linking
-    - [ ] - Tasks
-    - [ ] - Tags
-    - [ ] - Code inline
-    - [ ] - Code blocks
+    - [x] - Embedded notes/files
+    - [x] - Wiki-style headers/section linking
+    - [x] - Tasks
+    - [x] - Tags
+    - [x] - Code inline
+    - [x] - Code blocks
     - [ ] - YAML
     - [ ] - Footnotes
     - [ ] - Math
