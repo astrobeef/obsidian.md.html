@@ -1,5 +1,3 @@
-# Third-party
-from bs4 import BeautifulSoup as BS
 # First-party
 from urllib.parse import quote
 import re
@@ -502,15 +500,51 @@ def replace_comments(text_md: str, verbose: bool = False) -> str:
 ## Signify External Links ##
 ############################
 
-def mark_link_types(
-        text_html   :str,
-        verbose     :bool = True
-) -> str:
-    soup = BS(text_html, "html.parser")
-    for a in soup.find_all('a'):
-        href = a.get('href', '')
-        if href.startswith(('http://', 'https://', 'mailto:')):
-            a['class'] = (a.get('class', []) or []) + [EXTERNAL_LINK_CLASS]
-        elif href.endswith('.html'):
-            a['class'] = (a.get('class', []) or []) + [INTERNAL_LINK_CLASS]
-    return str(soup)
+import re
+from constants import EXTERNAL_LINK_CLASS, INTERNAL_LINK_CLASS
+
+def mark_link_types(text_html: str, verbose: bool = False) -> str:
+    """
+    Add EXTERNAL_LINK_CLASS or INTERNAL_LINK_CLASS to <a> tags
+    """
+    # Regex to capture full <a ...> tag, the attribute list, and the href value.
+    a_tag_re = re.compile(
+        r'<a\b([^>]*?\bhref\s*=\s*["\'])([^"\']+)(["\'][^>]*)>',
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    def _add_class(tag_attrs: str, href: str, tail: str, tag_full: str) -> str:
+        add_cls = None
+        if href.startswith(("http://", "https://", "mailto:")):
+            add_cls = EXTERNAL_LINK_CLASS
+        elif href.lower().endswith(".html"):
+            add_cls = INTERNAL_LINK_CLASS
+        if not add_cls:
+            return tag_full
+        # Does the tag already have a class attribute?
+        class_match = re.search(r'\bclass\s*=\s*["\']([^"\']*)', tag_attrs, flags=re.IGNORECASE)
+        if class_match:
+            classes = class_match.group(1).split()
+            if add_cls not in classes:
+                classes.append(add_cls)
+                new_class_attr = f'class="{ " ".join(classes) }"'
+                tag_attrs = (
+                    tag_attrs[: class_match.start()]
+                    + new_class_attr
+                    + tag_attrs[class_match.end() :]
+                )
+        else:
+            tag_attrs = ' class="{}"{}'.format(add_cls, tag_attrs)
+        if verbose:
+            print(f'[{add_cls}] ← {href}')
+        return f"<a{tag_attrs}{href}{tail}>"
+    result_parts = []
+    pos = 0
+    for m in a_tag_re.finditer(text_html):
+        start, end = m.span()
+        attrs_prefix, href_val, attrs_suffix = m.groups()
+        result_parts.append(text_html[pos:start])
+        new_tag = _add_class(attrs_prefix, href_val, attrs_suffix, m.group(0))
+        result_parts.append(new_tag)
+        pos = end
+    result_parts.append(text_html[pos:])
+    return "".join(result_parts)

@@ -46,7 +46,6 @@ Nor does this restructure the file hierarchy to reflect a standard site structur
 # Dependencies
 - [markdown](https://pypi.org/project/Markdown/)
 - [pymdown-extensions](https://pypi.org/project/pymdown-extensions/)
-- [beautifulsoup4](https://pypi.org/project/beautifulsoup4/)
 
 # Log
 
