@@ -3,7 +3,6 @@ This is an example markdown file linking to [[README]] using Obsidian wikilinks.
 
 # Spacing Test
 ## Headings ++ Test H2
-#tag-test
 ## List test
 1. Hello
 2. World
@@ -29,3 +28,34 @@ This is an example markdown file linking to [[README]] using Obsidian wikilinks.
 
 # Wiki Headers/Section Links
 [[README#Setting Up Environment]]
+
+# Tag Tests
+Should be considered tags:
+#test
+This is a note with a #tag inside.
+#one #two #three
+#tag_123 #tag_test2.
+#my-tag #another-tag
+#parent/child
+Should not be considered tags:
+(#tag1) , [#tag2] , {#tag}
+
+# Code Block Test
+~~~python
+    def _convert_md_to_html(
+            text_md         :str,
+            tags_use_links  :bool = False,
+            verbose         :bool = False,
+    ):
+        text_md = _replace_embeds(text_md, verbose=verbose)
+        text_md = _replace_wikilinks(text_md, verbose=verbose)
+        text_md = _replace_tags(text_md, use_links=tags_use_links, verbose=verbose)
+
+        text_md = _smart_single_newlines(text_md, verbose=verbose)
+        text_md = _smart_insert_spacing(text_md)
+        text_html = md.markdown(text_md, extensions=["toc", "pymdownx.tasklist"])
+        text_html = _mark_link_types(text_html, verbose=verbose)
+        if verbose:
+            print(f"------TO HTML------\n{text_html[:min(len(text_html), PREVIEW_LENGTH)]}{"..." if len(text_html) > PREVIEW_LENGTH else ""}\n-----END OF HTML-----")
+        return text_html
+~~~

@@ -38,6 +38,8 @@ To set up python environment, run these commands:
 
 # Dependencies
 - [markdown](https://pypi.org/project/Markdown/)
+- [pymdown-extensions](https://pypi.org/project/pymdown-extensions/)
+- [beautifulsoup4](https://pypi.org/project/beautifulsoup4/)
 
 # Log
 
@@ -50,3 +52,6 @@ Obsidian allows for linking to headings within a note by using anchor syntax. In
     text_html = md.markdown(text_md, extensions=["toc"])
 ~~~
 With the IDs made, the next step is to convert the markdown anchors to the TOC id format. For example, convert "Heading Example" to "heading-example", which can be done with regex.
+
+## Tags
+To handle tags, I have the option to use `<a>` element types, which would make the tags clickable. This would be useful for a site without JavaScript to enable a pseudo-search feature which links to a dedicated page for the tag. The dedicated page would include links for every occurance of the tag. However, if I don't consider this restriction, it would be more modern for the elements to be `<span>`. JavaScript could then be used to interact with `<span>` tags in ways that mimic Obsidian interactions.

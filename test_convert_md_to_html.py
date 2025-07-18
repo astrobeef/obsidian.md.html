@@ -10,25 +10,31 @@ import re
 PREVIEW_LENGTH = 512#characters
 
 # Classes
-EMBED_MARKDOWN_CLASS = "embed-markdown"
-EMBED_IMAGE_CLASS = "embed-image"
-EMBED_IMAGE_DATA_WIDTH = "data-width"
-INTERNAL_LINK_CLASS = "link-internal"
-EXTERNAL_LINK_CLASS = "link-external"
-WIKILINK_LINK_CLASS = "link-wikilink"
+EMBED_MARKDOWN_CLASS    = "embed-markdown"
+EMBED_IMAGE_CLASS       = "embed-image"
+EMBED_IMAGE_DATA_WIDTH  = "data-width"
+INTERNAL_LINK_CLASS     = "link-internal"
+EXTERNAL_LINK_CLASS     = "link-external"
+WIKILINK_LINK_CLASS     = "link-wikilink"
+TAGS_CLASS              = "obsi-tag"
+TAGS_DATA               = "data-tag"
 
 ##############
 # CONVERSION #
 ##############
 
 def _convert_md_to_html(
-        text_md :str,
-        verbose :bool = False,
+        text_md         :str,
+        tags_use_links  :bool = False,
+        verbose         :bool = False,
 ):
     text_md = _replace_embeds(text_md, verbose=verbose)
     text_md = _replace_wikilinks(text_md, verbose=verbose)
+    text_md = _replace_tags(text_md, use_links=tags_use_links, verbose=verbose)
+
+    text_md = _smart_single_newlines(text_md, verbose=verbose)
     text_md = _smart_insert_spacing(text_md)
-    text_html = md.markdown(text_md, extensions=["toc"])
+    text_html = md.markdown(text_md, extensions=["toc", "pymdownx.tasklist"])
     text_html = _mark_link_types(text_html, verbose=verbose)
     if verbose:
         print(f"------TO HTML------\n{text_html[:min(len(text_html), PREVIEW_LENGTH)]}{"..." if len(text_html) > PREVIEW_LENGTH else ""}\n-----END OF HTML-----")
@@ -122,6 +128,17 @@ def _smart_insert_spacing(
     heading_pattern = re.compile(r"([^\n])\n(\s*#{1,6}\s+)")
     text_md = heading_pattern.sub(r"\1\n\n\2", text_md)
     return text_md
+
+# NOTE: Order after code block replacement in pipeline. Otherwise code blocks will be affected by this.
+def _smart_single_newlines(
+        text_md :str,
+        verbose :bool
+) -> str:
+    """Obsidian is smarter with markdown styling than traditional markdown displayers. In typical markdown viewers, a series of text on newlines will not be respected. Instead, text will be snapped onto one line. In Obsidian, single newlines are respected. This is such a core part of Obsidian notes that it should be built into the converter."""
+    result = re.sub(r'([^\n])\n(?!\n)', r'\1  \n', text_md)
+    if verbose:
+        print("After newline preservation:\n" + result)
+    return result
 
 ####################
 ## Callouts/Notes ##
@@ -225,25 +242,48 @@ def _catch_embedded_misc(
         raise ValueError(message)
     return re.sub(misc_pattern, i_replace, text_md, flags=re.IGNORECASE)
 
-###########
-## Tasks ##
-###########
-
-def _replace_tasks(
-        text_md :str,
-        verbose :bool = False
-) -> str:
-    return ""
-
 ##########
 ## Tags ##
 ##########
 
 def _replace_tags(
-        text_md :str,
-        verbose :bool = False
+        text_md     :str,
+        use_links   :bool = False,
+        verbose     :bool = False
 ) -> str:
-    return ""
+    if use_links:
+        return _replace_tags_with_links(text_md, verbose)
+    else:
+        return _replace_tags_without_links(text_md, verbose)
+
+def _replace_tags_with_links(text_md: str, verbose: bool = False) -> str:
+    """
+    Replace #tags with clickable \<a\> elements.
+    """
+    def tag_replacer(match):
+        tag = match.group(0)
+        tag_name = match.group(1)
+        tag_href = f"tags/{tag_name}.html"
+        html = f'<a class="{TAGS_CLASS}" {TAGS_DATA}="{tag_name}" href="{tag_href}">{tag}</a>'
+        if verbose:
+            print(f'Converted tag "{tag}" to "{html}"')
+        return html
+    tag_pattern = re.compile(r'(?<![\w\[\(\{])#([\w/-]+)')
+    return tag_pattern.sub(tag_replacer, text_md)
+
+def _replace_tags_without_links(text_md: str, verbose: bool = False) -> str:
+    """
+    Replace #tags with <button> elements for JS-based/dynamic sites.
+    """
+    def tag_replacer(match):
+        tag = match.group(0)
+        tag_name = match.group(1)
+        html = f'<button class="{TAGS_CLASS}" {TAGS_DATA}="{tag_name}">{tag}</button>'
+        if verbose:
+            print(f'Converted tag "{tag}" to "{html}"')
+        return html
+    tag_pattern = re.compile(r'(?<![\w\[\(\{])#([\w/-]+)')
+    return tag_pattern.sub(tag_replacer, text_md)
 
 ##########
 ## Code ##
@@ -354,9 +394,9 @@ def _mark_link_types(
     for a in soup.find_all('a'):
         href = a.get('href', '')
         if href.startswith(('http://', 'https://', 'mailto:')):
-            a['class'] = (a.get('class', []) or []) + [f'{EXTERNAL_LINK_CLASS}']
+            a['class'] = (a.get('class', []) or []) + [EXTERNAL_LINK_CLASS]
         elif href.endswith('.html'):
-            a['class'] = (a.get('class', []) or []) + [f'{INTERNAL_LINK_CLASS}']
+            a['class'] = (a.get('class', []) or []) + [INTERNAL_LINK_CLASS]
     return str(soup)
 
 #######
@@ -400,6 +440,6 @@ def _save_html(
     return
 
 test_file = "test.md"
-test_md = _read_md(test_file, True)
-test_html = _convert_md_to_html(test_md, True)
-_save_html(test_file, test_html, True)
+test_md = _read_md(test_file, verbose=True)
+test_html = _convert_md_to_html(test_md, tags_use_links=False, verbose=True)
+_save_html(test_file, test_html, verbose=True)
