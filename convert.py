@@ -1,72 +1,21 @@
 # Third-party
-import markdown as md
-from markdown.extensions.toc import TocExtension as tocExt
 from bs4 import BeautifulSoup as BS
 # First-party
 from urllib.parse import quote
-from os import path
 import re
 import html
-
-PREVIEW_LENGTH = 512#characters
-
-# Classes
-EMBED_MARKDOWN_CLASS        = "embed-markdown"
-EMBED_IMAGE_CLASS           = "embed-image"
-EMBED_IMAGE_DATA_WIDTH      = "data-width"
-EMBED_AUDIO_CLASS           = "embed-audio"
-EMBED_VIDEO_CLASS           = "embed-video"
-EMBED_PDF_CLASS             = "embed-pdf"
-INTERNAL_LINK_CLASS         = "link-internal"
-EXTERNAL_LINK_CLASS         = "link-external"
-WIKILINK_LINK_CLASS         = "link-wikilink"
-TAGS_CLASS                  = "obsi-tag"
-TAGS_DATA                   = "data-tag"
-CODE_LANG_CLASS_PREFIX      = "language-"
-CODE_BLOCK_CLASS            = "code-block"
-CODE_INLINE_CLASS           = "code-inline"
-CALLOUT_CLASS               = "callout"
-CALLOUT_TITLE_CLASS         = "callout-title"
-CALLOUT_CONTENT_CLASS       = "callout-content"
-CALLOUT_TYPE_CLASS_PREFIX   = "callout-"
-CALLOUT_TYPE_DATA           = "data-callout-type"
-MATH_BLOCK_CLASS            = "math-block"
-MATH_INLINE_CLASS           = "math-inline"
+# Local
+from constants import *
 
 ##############
 # CONVERSION #
 ##############
 
-def _convert_md_to_html(
-        text_md                 :str,
-        tags_use_links          :bool = False,
-        embed_mathjax_scripting :bool = False,
-        verbose                 :bool = False,
-):
-    text_md = _replace_comments(text_md, verbose=verbose)
-    text_md = _smart_insert_spacing(text_md)
-    text_md = _smart_single_newlines(text_md, verbose=verbose)
-    text_md = _replace_math(text_md, verbose=verbose)
-    text_md = _replace_highlight(text_md, verbose=verbose)
-    text_md = _replace_strikethrough(text_md, verbose=verbose)
-    text_md = _replace_code(text_md, verbose=verbose)
-    text_md = _replace_callouts(text_md, verbose=verbose)
-    text_md = _replace_embeds(text_md, verbose=verbose)
-    text_md = _replace_wikilinks(text_md, verbose=verbose)
-    text_md = _replace_tags(text_md, use_links=tags_use_links, verbose=verbose)
-    text_html = md.markdown(text_md, extensions=["toc", "pymdownx.tasklist", "tables", "footnotes"])
-    text_html = _mark_link_types(text_html, verbose=verbose)
-    if embed_mathjax_scripting and _is_mathjax_necessary(text_md):
-        text_html += _embed_MathJax_scripting()
-    if verbose:
-        print(f"------TO HTML------\n{text_html[:min(len(text_html), PREVIEW_LENGTH)]}{"..." if len(text_html) > PREVIEW_LENGTH else ""}\n-----END OF HTML-----")
-    return text_html
-
 ###############
 ## Wikilinks ##
 ###############
 
-def _replace_wikilinks(
+def replace_wikilinks(
         text_md :str,
         verbose :bool = False
 ) -> str:
@@ -139,7 +88,7 @@ def _replace_block_reference(
 ## Smart Adjustments ##
 #######################
 
-def _smart_insert_spacing(
+def smart_insert_spacing(
         text_md :str
 ) -> str:
     """Obsidian is smarter with markdown styling than traditional markdown displayers. For example, a list in markdown traditionally requires a space prior to note that it's a list. But Obsidian is smart enough to know it's a list and will display it as such."""
@@ -153,7 +102,7 @@ def _smart_insert_spacing(
     text_md = code_fence_pattern.sub(r"\1\n\n\2", text_md)
     return text_md
 
-def _smart_single_newlines(
+def smart_single_newlines(
         text_md :str,
         verbose :bool
 ) -> str:
@@ -168,7 +117,7 @@ def _smart_single_newlines(
 ## Callouts/Notes ##
 ####################
 
-def _replace_callouts(text_md: str, verbose: bool = False) -> str:
+def replace_callouts(text_md: str, verbose: bool = False) -> str:
     """
     Converts Obsidian callouts into a single <p class="{CALLOUT_CONTENT_CLASS}">...</p>
     with <br> between content lines, matching blockquote behavior (default markdown conversion for blockquotes).
@@ -219,7 +168,7 @@ def _replace_callouts(text_md: str, verbose: bool = False) -> str:
 ## Embeds ##
 ############
 
-def _replace_embeds(
+def replace_embeds(
         text_md :str,
         verbose :bool = False
 ) -> str:
@@ -361,7 +310,7 @@ def _catch_embedded_misc(
 ## Tags ##
 ##########
 
-def _replace_tags(
+def replace_tags(
         text_md     :str,
         use_links   :bool = False,
         verbose     :bool = False
@@ -404,7 +353,7 @@ def _replace_tags_without_links(text_md: str, verbose: bool = False) -> str:
 ## Code ##
 ##########
 
-def _replace_code(
+def replace_code(
         text_md :str,
         verbose :bool = False
 ) -> str:
@@ -467,7 +416,7 @@ def _replace_YAML(
 ## Math ##
 ##########
 
-def _replace_math(
+def replace_math(
         text_md                 :str,
         verbose                 :bool = False
 ) -> str:
@@ -490,7 +439,7 @@ def _replace_math(
         print("Math blocks and inline math replaced with wrappers (delimiters kept).")
     return text_md
 
-def _embed_MathJax_scripting() -> str:
+def embed_MathJax_scripting() -> str:
     """Returns the MathJax script block for HTML output."""
     return """
 <script>
@@ -507,7 +456,7 @@ options: {
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 """
 
-def _is_mathjax_necessary(text_md: str) -> bool:
+def is_mathjax_necessary(text_md: str) -> bool:
     """Returns True if math blocks or inline math are present."""
     return bool(re.search(r'\$\$[\s\S]+?\$\$|\$[^\$\n]+?\$', text_md))
 
@@ -515,7 +464,7 @@ def _is_mathjax_necessary(text_md: str) -> bool:
 ## Highlight ##
 ###############
 
-def _replace_highlight(text_md: str, verbose: bool = False) -> str:
+def replace_highlight(text_md: str, verbose: bool = False) -> str:
     text_md = re.sub(r'==(.+?)==', r'<mark>\1</mark>', text_md)
     if verbose:
         print("Highlight replaced.")
@@ -525,7 +474,7 @@ def _replace_highlight(text_md: str, verbose: bool = False) -> str:
 ## Strikethrough ##
 ###################
 
-def _replace_strikethrough(
+def replace_strikethrough(
         text_md :str,
         verbose :bool = False
 ) -> str:
@@ -542,7 +491,7 @@ def _replace_strikethrough(
 ## Comments ##
 ##############
 
-def _replace_comments(text_md: str, verbose: bool = False) -> str:
+def replace_comments(text_md: str, verbose: bool = False) -> str:
     # Remove block comments: %% ... %%
     text_md = re.sub(r'%%[\s\S]*?%%', '', text_md)
     if verbose:
@@ -553,7 +502,7 @@ def _replace_comments(text_md: str, verbose: bool = False) -> str:
 ## Signify External Links ##
 ############################
 
-def _mark_link_types(
+def mark_link_types(
         text_html   :str,
         verbose     :bool = True
 ) -> str:
@@ -565,48 +514,3 @@ def _mark_link_types(
         elif href.endswith('.html'):
             a['class'] = (a.get('class', []) or []) + [INTERNAL_LINK_CLASS]
     return str(soup)
-
-#######
-# I/O #
-#######
-
-def _read_md(
-        path    :str,
-        verbose :bool = False,
-) -> str:
-    # In context, a file should never be called to open if it doesn't exist, so neglecting validation
-    with open(path, "r", encoding="utf-8") as f:
-        text_md = f.read()
-        if verbose:
-            print(f"-----{path}-----\n{text_md[:min(len(text_md), PREVIEW_LENGTH)]}{"..." if len(text_md) > PREVIEW_LENGTH else ""}...\n-----END OF MD-----")
-        return text_md
-
-def _path_md_to_html(
-        path_md :str,
-        verbose :bool = False
-) -> str:
-    base, type = path.splitext(path_md)
-    if type != "" and type != ".md":
-        return path_md
-    base_encoded = quote(base, safe="/")
-    path_html = f"{base_encoded}.html"
-    if verbose:
-        print(f"Converted md_path \"{path_md}\" to \"{path_html}\"")
-    return path_html
-
-def _save_html(
-        path_md :str,
-        html    :str,
-        verbose :bool = False
-) -> str:
-    path_html = _path_md_to_html(path_md)
-    with open(path_html, "w", encoding="utf-8") as f:
-        f.write(html)
-        if verbose:
-            print(f"Saved \"{path_md}\" as HTML to \"{path_html}\"")
-    return
-
-test_file = "test.md"
-test_md = _read_md(test_file, verbose=True)
-test_html = _convert_md_to_html(test_md, tags_use_links=False, embed_mathjax_scripting=True, verbose=True)
-_save_html(test_file, test_html, verbose=True)

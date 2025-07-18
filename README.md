@@ -11,12 +11,12 @@ Nor does this provide advanced Obsidian features.
 
 # Progress
 - [x] - Basic conversion working (no style; no header; no Obsidian specific conversions)
-- [ ] - Obsidian markdown handling
+- [x] - Obsidian markdown handling
     - [x] - wikilinks
     - [x] - smart styling (spaces before certain items like lists, headings, tags)
     - [x] - Anchors
     - [ ] - Block references
-    - [ ] - Callouts (encapsulate callout notes with unique classes based on callout type)
+    - [x] - Callouts (encapsulate callout notes with unique classes based on callout type)
     - [x] - Embedded notes/files
     - [x] - Wiki-style headers/section linking
     - [x] - Tasks
@@ -24,11 +24,11 @@ Nor does this provide advanced Obsidian features.
     - [x] - Code inline
     - [x] - Code blocks
     - [ ] - YAML
-    - [ ] - Footnotes
-    - [ ] - Math
-    - [ ] - Highlighting
-    - [ ] - Strikethrough
-    - [ ] - Comments
+    - [x] - Footnotes
+    - [x] - Math
+    - [x] - Highlighting
+    - [x] - Strikethrough
+    - [x] - Comments
 
 # Setting Up Environment
 To set up python environment, run these commands:
