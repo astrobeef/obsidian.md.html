@@ -16,11 +16,20 @@ This is an example markdown file linking to [[README]] using Obsidian wikilinks.
 - [x] Hello
 - [x] World
 
-# Callout Test
+# Note / Callout Test
+
+> note without callout
+> this is a note without a callout
 
 > [!note] This note is a callout
 > This is a note
+> This is another line of the note
+> This is a third line of the note
 
+> [!tip] This tip is a callout
+> This is a tip
+> This is another line of the tip
+> This is a third line of the tip
 
 # Embedded Notes/Files Test
 ![[README]]
@@ -39,6 +48,37 @@ This is a note with a #tag inside.
 #parent/child
 Should not be considered tags:
 (#tag1) , [#tag2] , {#tag}
+
+# Table Test
+
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Row 1A   | Row 1B   | Row 1C   |
+| Row 2A   | Row 2B   | Row 2C   |
+
+# Footnote Test
+
+Here is a statement with a footnote.[^1]
+
+[^1]: This is the footnote content.
+
+# Math Test
+
+Inline math: $x^2 + y^2 = z^2$
+
+Block math:
+$$
+\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
+$$
+
+# Highlight Test
+
+==This text should be highlighted in Obsidian.==
+
+# Comment Test
+
+%% This is a block comment in Obsidian and should not appear in output %%
+Here is normal text.
 
 # Code Inline
 Some code: `int x = 10`

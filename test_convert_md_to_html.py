@@ -11,20 +11,25 @@ import html
 PREVIEW_LENGTH = 512#characters
 
 # Classes
-EMBED_MARKDOWN_CLASS    = "embed-markdown"
-EMBED_IMAGE_CLASS       = "embed-image"
-EMBED_IMAGE_DATA_WIDTH  = "data-width"
-EMBED_AUDIO_CLASS       = "embed-audio"
-EMBED_VIDEO_CLASS       = "embed-video"
-EMBED_PDF_CLASS         = "embed-pdf"
-INTERNAL_LINK_CLASS     = "link-internal"
-EXTERNAL_LINK_CLASS     = "link-external"
-WIKILINK_LINK_CLASS     = "link-wikilink"
-TAGS_CLASS              = "obsi-tag"
-TAGS_DATA               = "data-tag"
-CODE_LANG_CLASS_PREFIX  = "language-"
-CODE_BLOCK_CLASS        = "code-block"
-CODE_INLINE_CLASS       = "code-inline"
+EMBED_MARKDOWN_CLASS        = "embed-markdown"
+EMBED_IMAGE_CLASS           = "embed-image"
+EMBED_IMAGE_DATA_WIDTH      = "data-width"
+EMBED_AUDIO_CLASS           = "embed-audio"
+EMBED_VIDEO_CLASS           = "embed-video"
+EMBED_PDF_CLASS             = "embed-pdf"
+INTERNAL_LINK_CLASS         = "link-internal"
+EXTERNAL_LINK_CLASS         = "link-external"
+WIKILINK_LINK_CLASS         = "link-wikilink"
+TAGS_CLASS                  = "obsi-tag"
+TAGS_DATA                   = "data-tag"
+CODE_LANG_CLASS_PREFIX      = "language-"
+CODE_BLOCK_CLASS            = "code-block"
+CODE_INLINE_CLASS           = "code-inline"
+CALLOUT_CLASS               = "callout"
+CALLOUT_TITLE_CLASS         = "callout-title"
+CALLOUT_CONTENT_CLASS       = "callout-content"
+CALLOUT_TYPE_CLASS_PREFIX   = "callout-"
+CALLOUT_TYPE_DATA           = "data-callout-type"
 
 ##############
 # CONVERSION #
@@ -38,6 +43,7 @@ def _convert_md_to_html(
     text_md = _smart_insert_spacing(text_md)
     text_md = _smart_single_newlines(text_md, verbose=verbose)
     text_md = _replace_code(text_md, verbose=verbose)
+    text_md = _replace_callouts(text_md, verbose=verbose)
     text_md = _replace_embeds(text_md, verbose=verbose)
     text_md = _replace_wikilinks(text_md, verbose=verbose)
     text_md = _replace_tags(text_md, use_links=tags_use_links, verbose=verbose)
@@ -153,12 +159,52 @@ def _smart_single_newlines(
 ## Callouts/Notes ##
 ####################
 
-def _replace_callouts(
-        text_md :str,
-        verbose :bool = False
-) -> str:
-    """See [Callouts](https://help.obsidian.md/callouts) for documentation."""
-    return ""
+def _replace_callouts(text_md: str, verbose: bool = False) -> str:
+    """
+    Converts Obsidian callouts into a single <p class="{CALLOUT_CONTENT_CLASS}">...</p>
+    with <br> between content lines, matching blockquote behavior (default markdown conversion for blockquotes).
+    """
+    callout_pat = re.compile(
+        r'(^> \[!(\w+)\](?:[ \t]+(.+))?\n'      # first line: type + optional title
+        r'((?:^>.*\n?)*)'                       # following quote lines (may be empty)
+        r')', re.MULTILINE)
+    def repl(m):
+        ctype = m.group(2).lower()
+        title = (m.group(3) or '').strip()
+        raw   = m.group(4)
+        # Gather all lines (may be empty)
+        lines = raw.splitlines()
+        content_lines = []
+        for ln in lines:
+            if ln.startswith('>'):
+                ln = ln[1:]
+                if ln.startswith(' '):
+                    ln = ln[1:]
+            # Include all lines
+            content_lines.append(html.escape(ln))
+        # Remove any leading blank content line (from single-line callout)
+        while content_lines and not content_lines[0].strip():
+            content_lines = content_lines[1:]
+        # Remove any trailing blank lines (not needed for rendering)
+        while content_lines and not content_lines[-1].strip():
+            content_lines = content_lines[:-1]
+        # Join content with <br>
+        body_html = ('<p class="{CALLOUT_CONTENT_CLASS}">'
+                     + '<br>\n'.join(content_lines) +
+                     '</p>') if content_lines else '<p class="{CALLOUT_CONTENT_CLASS}"></p>'
+        title_html = (f'<p class="{CALLOUT_TITLE_CLASS}">{html.escape(title)}</p>'
+                      if title else '')
+        html_block = (
+            f'<blockquote class="{CALLOUT_CLASS} {CALLOUT_TYPE_CLASS_PREFIX}{ctype}" '
+            f'{CALLOUT_TYPE_DATA}="{ctype}">\n'
+            f'{title_html}\n{body_html}\n'
+            f'</blockquote>'
+        )
+        if verbose:
+            print(f'Converted {ctype} call-out, title="{title}", '
+                  f'lines={len(content_lines)}')
+        return html_block
+    return callout_pat.sub(repl, text_md)
 
 ############
 ## Embeds ##
@@ -175,6 +221,7 @@ def _replace_embeds(
     _catch_embedded_misc(text_md, verbose=verbose)
     text_md = _replace_embedded_md(text_md, verbose=verbose)    # NOTE: Always run last, as it will treat any input file type as markdown
     return text_md
+
 ### Embed Markdown ###
 
 # NOTE: Does not embed markdown. Links to corresponding markdown HTML file.
