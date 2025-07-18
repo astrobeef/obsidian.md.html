@@ -1,5 +1,9 @@
 PREVIEW_LENGTH = 512#characters
 
+# I/O
+CONVERT_IGNORE_LIST_FILE    = ".convertignore"
+BUILT_HTML_EXTENSION        = ".md.html"
+
 # Classes
 EMBED_MARKDOWN_CLASS        = "embed-markdown"
 EMBED_IMAGE_CLASS           = "embed-image"
