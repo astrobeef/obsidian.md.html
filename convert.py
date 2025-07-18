@@ -63,7 +63,7 @@ def _convert_md_href_to_html(
     if base.lower().endswith('.md'):
         base = base[:-3]
     base_encoded = quote(base, safe="/")
-    href = f"{base_encoded}.html"
+    href = f"{base_encoded}{BUILT_HTML_EXTENSION}"
     if anchor:
         slug = _slugify_heading(anchor)
         href += f"#{slug}"
