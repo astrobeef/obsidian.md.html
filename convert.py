@@ -322,7 +322,7 @@ def replace_tags(
 
 def _replace_tags_with_links(text_md: str, verbose: bool = False) -> str:
     """
-    Replace #tags with clickable \<a\> elements.
+    Replace #tags with clickable <a> elements.
     """
     def tag_replacer(match):
         tag = match.group(0)
