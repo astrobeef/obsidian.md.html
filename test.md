@@ -64,3 +64,8 @@ Some code: `int x = 10`
             print(f"------TO HTML------\n{text_html[:min(len(text_html), PREVIEW_LENGTH)]}{"..." if len(text_html) > PREVIEW_LENGTH else ""}\n-----END OF HTML-----")
         return text_html
 ~~~
+
+# Test Embedding (Continued)
+![[_media/example.ogg]]
+![[_media/example.mp4]]
+![[_media/example.pdf]]
