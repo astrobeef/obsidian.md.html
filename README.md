@@ -55,3 +55,4 @@ With the IDs made, the next step is to convert the markdown anchors to the TOC i
 
 ## Tags
 To handle tags, I have the option to use `<a>` element types, which would make the tags clickable. This would be useful for a site without JavaScript to enable a pseudo-search feature which links to a dedicated page for the tag. The dedicated page would include links for every occurance of the tag. However, if I don't consider this restriction, it would be more modern for the elements to be `<span>`. JavaScript could then be used to interact with `<span>` tags in ways that mimic Obsidian interactions.
+I'm going to make this an option: use links (for those neglecting JavaScript) or use buttons (for those using JavaScript)
