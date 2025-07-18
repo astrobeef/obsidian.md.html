@@ -30,25 +30,34 @@ CALLOUT_TITLE_CLASS         = "callout-title"
 CALLOUT_CONTENT_CLASS       = "callout-content"
 CALLOUT_TYPE_CLASS_PREFIX   = "callout-"
 CALLOUT_TYPE_DATA           = "data-callout-type"
+MATH_BLOCK_CLASS            = "math-block"
+MATH_INLINE_CLASS           = "math-inline"
 
 ##############
 # CONVERSION #
 ##############
 
 def _convert_md_to_html(
-        text_md         :str,
-        tags_use_links  :bool = False,
-        verbose         :bool = False,
+        text_md                 :str,
+        tags_use_links          :bool = False,
+        embed_mathjax_scripting :bool = False,
+        verbose                 :bool = False,
 ):
+    text_md = _replace_comments(text_md, verbose=verbose)
     text_md = _smart_insert_spacing(text_md)
     text_md = _smart_single_newlines(text_md, verbose=verbose)
+    text_md = _replace_math(text_md, verbose=verbose)
+    text_md = _replace_highlight(text_md, verbose=verbose)
+    text_md = _replace_strikethrough(text_md, verbose=verbose)
     text_md = _replace_code(text_md, verbose=verbose)
     text_md = _replace_callouts(text_md, verbose=verbose)
     text_md = _replace_embeds(text_md, verbose=verbose)
     text_md = _replace_wikilinks(text_md, verbose=verbose)
     text_md = _replace_tags(text_md, use_links=tags_use_links, verbose=verbose)
-    text_html = md.markdown(text_md, extensions=["toc", "pymdownx.tasklist"])
+    text_html = md.markdown(text_md, extensions=["toc", "pymdownx.tasklist", "tables", "footnotes"])
     text_html = _mark_link_types(text_html, verbose=verbose)
+    if embed_mathjax_scripting and _is_mathjax_necessary(text_md):
+        text_html += _embed_MathJax_scripting()
     if verbose:
         print(f"------TO HTML------\n{text_html[:min(len(text_html), PREVIEW_LENGTH)]}{"..." if len(text_html) > PREVIEW_LENGTH else ""}\n-----END OF HTML-----")
     return text_html
@@ -454,69 +463,91 @@ def _replace_YAML(
 ) -> str:
     return ""
 
-############
-## Tables ##
-############
-
-# NOTE: This may already be handled by the markdown plugin
-def _replace_tables(
-        text_md :str,
-        verbose :bool = False
-) -> str:
-    return ""
-
-###############
-## Footnotes ##
-###############
-
-def _replace_footnotes(
-        text_md :str,
-        verbose :bool = False
-) -> str:
-    return ""
-
 ##########
 ## Math ##
 ##########
 
-# NOTE: I may not implement this since I never use math inline/blocks.
 def _replace_math(
-        text_md :str,
-        verbose :bool = False
+        text_md                 :str,
+        verbose                 :bool = False
 ) -> str:
-    return ""
+    """
+    Wraps math in HTML containers but leaves $ and $$ delimiters for MathJax/KaTeX.
+    """
+    # Block math: $$ ... $$
+    text_md = re.sub(
+        r"\$\$([\s\S]+?)\$\$",
+        lambda m: f'<div class="{MATH_BLOCK_CLASS}">$$\n{m.group(1).strip()}\n$$</div>',
+        text_md
+    )
+    # Inline math: $...$
+    text_md = re.sub(
+        r"\$([^\$\n]+?)\$",
+        lambda m: f'<span class="{MATH_INLINE_CLASS}">${m.group(1).strip()}$</span>',
+        text_md
+    )
+    if verbose:
+        print("Math blocks and inline math replaced with wrappers (delimiters kept).")
+    return text_md
+
+def _embed_MathJax_scripting() -> str:
+    """Returns the MathJax script block for HTML output."""
+    return """
+    <script>
+    window.MathJax = {
+    tex: {
+        inlineMath: [['$', '$']],
+        displayMath: [['$$', '$$']]
+    },
+    options: {
+        skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"]
+    }
+    };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    """
+
+def _is_mathjax_necessary(text_md: str) -> bool:
+    """Returns True if math blocks or inline math are present."""
+    return bool(re.search(r'\$\$[\s\S]+?\$\$|\$[^\$\n]+?\$', text_md))
 
 ###############
 ## Highlight ##
 ###############
 
-def _replace_highlight(
-        text_md :str,
-        verbose :bool = False
-) -> str:
-    return ""
+def _replace_highlight(text_md: str, verbose: bool = False) -> str:
+    text_md = re.sub(r'==(.+?)==', r'<mark>\1</mark>', text_md)
+    if verbose:
+        print("Highlight replaced.")
+    return text_md
 
 ###################
 ## Strikethrough ##
 ###################
 
-# NOTE: This may already be handled by the markdown plugin
 def _replace_strikethrough(
         text_md :str,
         verbose :bool = False
 ) -> str:
-    return ""
+    """
+    Converts ~~strikethrough~~ to <del>strikethrough</del>.
+    """
+    # Replace any non-greedy sequence between double tildes with <del>
+    result = re.sub(r'~~(.*?)~~', r'<del>\1</del>', text_md)
+    if verbose:
+        print("Strikethrough replaced.")
+    return result
 
 ##############
 ## Comments ##
 ##############
 
-# NOTE: I may not implement this since I never use comments.
-def _replace_comments(
-        text_md :str,
-        verbose :bool = False
-) -> str:
-    return ""
+def _replace_comments(text_md: str, verbose: bool = False) -> str:
+    # Remove block comments: %% ... %%
+    text_md = re.sub(r'%%[\s\S]*?%%', '', text_md)
+    if verbose:
+        print("Obsidian comments removed.")
+    return text_md
 
 ############################
 ## Signify External Links ##
@@ -575,7 +606,7 @@ def _save_html(
             print(f"Saved \"{path_md}\" as HTML to \"{path_html}\"")
     return
 
-test_file = "test.md"
+test_file = "README.md"
 test_md = _read_md(test_file, verbose=True)
-test_html = _convert_md_to_html(test_md, tags_use_links=False, verbose=True)
+test_html = _convert_md_to_html(test_md, tags_use_links=False, embed_mathjax_scripting=True, verbose=True)
 _save_html(test_file, test_html, verbose=True)

@@ -75,6 +75,10 @@ $$
 
 ==This text should be highlighted in Obsidian.==
 
+# Strikethrough Test
+
+~~This text should be highlighted in Obsidian.~~
+
 # Comment Test
 
 %% This is a block comment in Obsidian and should not appear in output %%
