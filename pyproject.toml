@@ -1,0 +1,31 @@
+############################
+#  pyproject.toml          #
+############################
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "obsidian-md-html"
+version = "0.25.07.18"
+description = "Convert Obsidian Markdown (.md) to lightweight, template-ready HTML."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+  {name = "astrobeef"}
+]
+
+dependencies = [
+  "markdown>=3.5",           # core Markdown processor
+  "pymdown-extensions>=10",  # task-list & other extensions the pipeline enables
+]
+
+[project.scripts]
+obsidian-md-html = "main:main"
+
+[tool.setuptools]
+py-modules = ["constants", "convert", "main", "pipeline", "util"]
+
+[tool.setuptools.package-data]
+"" = ["template.html", "*.md", ".convertignore"]
