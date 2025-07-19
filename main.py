@@ -11,12 +11,20 @@ from constants import CONVERT_IGNORE_LIST_FILE, BUILT_HTML_EXTENSION, DEFAULT_TE
 # TEMPLATE #
 ############
 
-def load_template(path=DEFAULT_TEMPLATE_FILE):
-    with open(path, encoding="utf-8") as f:
-        return f.read()
+def load_template(path=None):
+    if path and os.path.isfile(path):
+        with open(path, encoding="utf-8") as f:
+            return f.read()
+    elif os.path.isfile("template.html"):
+        with open("template.html", encoding="utf-8") as f:
+            return f.read()
+    else:
+        return None
 
-def apply_template(content, title="", template_path=DEFAULT_TEMPLATE_FILE):
+def apply_template(content, title="", template_path=None):
     template = load_template(template_path)
+    if template is None:
+        return content
     return template.format(
         title=html.escape(title),
         content=content
