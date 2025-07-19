@@ -35,7 +35,7 @@ Nor does this restructure the file hierarchy to reflect a standard site structur
     - [ ] - ~~Keep a list of generated files for easy deletion~~
     - [x] - Setup to run as a global tool for any project
 - [x] - Template for CSS/JS
-- [ ] - ISSUE: Obsidian will automatically shortern internal link paths to be the shortest unique path ("_media/image.png" -> "image.png" if not conflicting files)
+- [x] - ISSUE: Obsidian will automatically shortern internal link paths to be the shortest unique path ("_media/image.png" -> "image.png" if not conflicting files)
 - [ ] - I use the extension ".md.html" for clarity, but most HTML projects expect an entry file "index.html". I should have-- or at least as an option-- a unique case for renaming the "index.md" file to "index.html".
 
 
