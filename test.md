@@ -33,7 +33,7 @@ This is an example markdown file linking to [[README]] using Obsidian wikilinks.
 
 # Embedded Notes/Files Test
 ![[README]]
-![[_images/bruno.webp|300]]
+![[bruno.webp|300]]
 
 # Wiki Headers/Section Links
 [[README#Setting Up Environment]]
@@ -110,6 +110,6 @@ Some code: `int x = 10`
 ~~~
 
 # Test Embedding (Continued)
-![[_media/example.ogg]]
-![[_media/example.mp4]]
-![[_media/example.pdf]]
+![[example.ogg]]
+![[example.mp4]]
+![[example.pdf]]

@@ -1,9 +1,11 @@
 # First-party
+from collections import defaultdict
 from urllib.parse import quote
 import re
 import html
 # Local
 from constants import *
+from util import resolve_obsidian_path
 
 ##############
 # CONVERSION #
@@ -14,14 +16,15 @@ from constants import *
 ###############
 
 def replace_wikilinks(
-        text_md :str,
-        verbose :bool = False
+        text_md     :str,
+        file_index  :defaultdict,
+        root        :str,
+        verbose     :bool = False
 ) -> str:
     def i_replace(match):
         inner = match.group(1)
         target, display = _parse_obsidian_link(inner)
-        base, anchor = _split_anchor(target)
-        href = _convert_md_href_to_html(base, anchor)
+        href = _convert_md_href_to_html(target, file_index, root)
         html = f'<a href="{href}" class="{WIKILINK_LINK_CLASS}">{display}</a>'
         if verbose:
             print(f'Converted wikilink "[[{inner}]]" to "{html}"')
@@ -55,9 +58,12 @@ def _slugify_heading(text :str):
     return text
 
 def _convert_md_href_to_html(
-        base    :str,
-        anchor  :str =None
+        target              :str,
+        file_index          :defaultdict,
+        root                :str,
 ) -> str:
+    resolved_path = resolve_obsidian_path(target, file_index, root) if file_index else target
+    base, anchor = _split_anchor(resolved_path)
     if base.lower().endswith('.md'):
         base = base[:-3]
     base_encoded = quote(base, safe="/")
@@ -167,29 +173,32 @@ def replace_callouts(text_md: str, verbose: bool = False) -> str:
 ############
 
 def replace_embeds(
-        text_md :str,
-        verbose :bool = False
+        text_md     :str,
+        file_index  :defaultdict,
+        root        :str,
+        verbose     :bool = False
 ) -> str:
-    text_md = _replace_embedded_images(text_md, verbose=verbose)
-    text_md = _replace_embedded_audio(text_md, verbose=verbose)
-    text_md = _replace_embedded_video(text_md, verbose=verbose)
-    text_md = _replace_embedded_pdf(text_md, verbose=verbose)
+    text_md = _replace_embedded_images(text_md, file_index, root, verbose=verbose)
+    text_md = _replace_embedded_audio(text_md, file_index, root, verbose=verbose)
+    text_md = _replace_embedded_video(text_md, file_index, root, verbose=verbose)
+    text_md = _replace_embedded_pdf(text_md, file_index, root, verbose=verbose)
     _catch_embedded_misc(text_md, verbose=verbose)
-    text_md = _replace_embedded_md(text_md, verbose=verbose)    # NOTE: Always run last, as it will treat any input file type as markdown
+    text_md = _replace_embedded_md(text_md, file_index, root, verbose=verbose)    # NOTE: Always run last, as it will treat any input file type as markdown
     return text_md
 
 ### Embed Markdown ###
 
 # NOTE: Does not embed markdown. Links to corresponding markdown HTML file.
 def _replace_embedded_md(
-        text_md :str,
-        verbose :bool = False
+        text_md     :str,
+        file_index  :defaultdict,
+        root        :str,
+        verbose     :bool = False
 ) -> str:
     def i_replace(match):
         inner = match.group(1)
         target, display = _parse_obsidian_link(inner)
-        base, anchor = _split_anchor(target)
-        href = _convert_md_href_to_html(base, anchor)
+        href = _convert_md_href_to_html(target, file_index, root)
         html = f'<div class="{EMBED_MARKDOWN_CLASS}"><a href="{href}">{display}</a></div>'
         if verbose:
             print(f'Converted embed markdown "![[{inner}]]" to "{html}"')
@@ -200,8 +209,10 @@ def _replace_embedded_md(
 ### Embed Images ###
 
 def _replace_embedded_images(
-        text_md :str,
-        verbose :bool = False
+        text_md     :str,
+        file_index  :defaultdict,
+        root        :str,
+        verbose     :bool = False
 ) -> str:
     def i_replace(match):
         inner = match.group(1)
@@ -213,6 +224,7 @@ def _replace_embedded_images(
             src = inner.strip()
             alt = src
             width = None
+        src = resolve_obsidian_path(src, file_index, root)
         html = f'<img src="{src}" class="{EMBED_IMAGE_CLASS}" alt="{alt}"'
         if width:
             html += f' {EMBED_IMAGE_DATA_WIDTH}="{width}"'
@@ -244,12 +256,15 @@ def _parse_obsidian_image_options(options: str):
 ### Embed Audio ###
 
 def _replace_embedded_audio(
-        text_md :str,
-        verbose :bool = False
+        text_md     :str,
+        file_index  :defaultdict,
+        root        :str,
+        verbose     :bool = False
 ) -> str:
     def i_replace(match):
         inner = match.group(1)
         src = inner.strip()
+        src = resolve_obsidian_path(src, file_index, root)
         html = f'<audio controls class="{EMBED_AUDIO_CLASS}"><source src="{src}"></audio>'
         if verbose:
             print(f'Converted embed audio "![[{inner}]]" to "{html}"')
@@ -260,12 +275,15 @@ def _replace_embedded_audio(
 ### Embed Video ###
 
 def _replace_embedded_video(
-        text_md :str,
-        verbose :bool = False
+        text_md     :str,
+        file_index  :defaultdict,
+        root        :str,
+        verbose     :bool = False
 ) -> str:
     def i_replace(match):
         inner = match.group(1)
         src = inner.strip()
+        src = resolve_obsidian_path(src, file_index, root)
         html = f'<video controls class="{EMBED_VIDEO_CLASS}"><source src="{src}"></video>'
         if verbose:
             print(f'Converted embed video "![[{inner}]]" to "{html}"')
@@ -276,12 +294,15 @@ def _replace_embedded_video(
 ### Embed PDF ###
 
 def _replace_embedded_pdf(
-        text_md :str,
-        verbose :bool = False
+        text_md     :str,
+        file_index  :defaultdict,
+        root        :str,
+        verbose     :bool = False
 ) -> str:
     def i_replace(match):
         inner = match.group(1)
         src = inner.strip()
+        src = resolve_obsidian_path(src, file_index, root)
         html = f'<embed src="{src}" type="application/pdf" class="{EMBED_PDF_CLASS}">'
         if verbose:
             print(f'Converted embed PDF "![[{inner}]]" to "{html}"')

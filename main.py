@@ -1,4 +1,5 @@
 # First-party
+from collections import defaultdict
 import sys
 import os
 import html
@@ -6,6 +7,7 @@ import html
 from pipeline import convert_markdown_to_html
 from util import parse_ignore_file, should_ignore_files
 from constants import CONVERT_IGNORE_LIST_FILE, BUILT_HTML_EXTENSION, DEFAULT_TEMPLATE_FILE
+from util import build_file_index
 
 ############
 # TEMPLATE #
@@ -38,17 +40,21 @@ def convert_file(
         input_path  :str,
         use_links   :bool,
         use_mathjax :bool,
-        verbose     :bool,
-        template_path :str = DEFAULT_TEMPLATE_FILE
+        file_index  :defaultdict,
+        root        :str,
+        verbose     :bool = False,
+        template_path :str = DEFAULT_TEMPLATE_FILE,
 ) -> None:
     output_path = os.path.splitext(input_path)[0]  + BUILT_HTML_EXTENSION
     with open(input_path, "r", encoding="utf-8") as f:
         text_md = f.read()
     html = convert_markdown_to_html(
         text_md,
+        file_index              =file_index,
+        root                    =root,
         tags_use_links          =use_links,
         embed_mathjax_scripting =use_mathjax,
-        verbose                 =verbose
+        verbose                 =verbose,
     )
     title = os.path.splitext(os.path.basename(input_path))[0]
     final_html = apply_template(html, title=title, template_path=template_path)
@@ -66,6 +72,7 @@ def convert_directory(
 ) -> None:
     ignore_path = os.path.join(input_dir, CONVERT_IGNORE_LIST_FILE)
     ignore_patterns = parse_ignore_file(ignore_path)
+    file_index = build_file_index(input_dir)
     for root, dirs, files in os.walk(input_dir):
         rel_dir = os.path.relpath(root, input_dir)
         dirs[:] = [d for d in dirs if not should_ignore_files(os.path.normpath(os.path.join(rel_dir, d)), ignore_patterns, is_dir=True)]
@@ -75,7 +82,16 @@ def convert_directory(
                 continue
             if filename.lower().endswith(".md"):
                 input_path = os.path.join(root, filename)
-                convert_file(input_path, use_links, use_mathjax, verbose, template_path)
+                out_dir = os.path.join(input_dir, os.path.dirname(rel_path))
+                os.makedirs(out_dir, exist_ok=True)
+                convert_file(
+                    input_path      = input_path,
+                    use_links       = use_links,
+                    use_mathjax     = use_mathjax,
+                    file_index      = file_index,
+                    root            = root,
+                    verbose         = verbose,
+                    template_path   = template_path)
     return
 
 ###########
@@ -177,7 +193,10 @@ def main():
         if not input_path.lower().endswith('.md'):
             print("Error: Input file must be a markdown (.md) file.")
             sys.exit(1)
-        convert_file(input_path, use_links, use_mathjax, verbose, template_path)
+        file_dir = os.path.dirname(os.path.abspath(input_path))
+        file_index = build_file_index(file_dir)
+        root = file_dir
+        convert_file(input_path, use_links, use_mathjax, verbose, template_path, file_index, root)
 
 if __name__ == "__main__":
     main()
