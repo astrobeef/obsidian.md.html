@@ -56,13 +56,13 @@ def resolve_obsidian_path(
     """
     candidates = file_map.get(link_text.lower())
     if not candidates:
-        return link_text
+        return link_text.replace("\\", "/")
     if len(candidates) == 1:
-        return candidates[0]
+        return candidates[0].replace("\\", "/")
     current_dir_parts = os.path.normpath(root).split(os.sep)
     for i in range(len(current_dir_parts), 0, -1):
         prefix = os.path.join(*current_dir_parts[:i])
         for candidate in candidates:
             if candidate.startswith(prefix):
-                return candidate
+                return candidate.replace("\\", "/")
     return candidates[0].replace("\\", "/")
