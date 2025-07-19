@@ -28,4 +28,4 @@ obsidian-md-html = "main:main"
 py-modules = ["constants", "convert", "main", "pipeline", "util"]
 
 [tool.setuptools.package-data]
-"" = ["template.html", "*.md", ".convertignore"]
+"*" = ["template.html", "*.md", ".convertignore"]
