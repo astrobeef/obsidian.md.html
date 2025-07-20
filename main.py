@@ -45,7 +45,7 @@ def convert_file(
         verbose     :bool = False,
         template_path :str = DEFAULT_TEMPLATE_FILE,
 ) -> None:
-    output_path = os.path.splitext(input_path)[0]  + BUILT_HTML_EXTENSION
+    output_path = _convert_filename(input_path)
     with open(input_path, "r", encoding="utf-8") as f:
         text_md = f.read()
     html = convert_markdown_to_html(
@@ -62,6 +62,14 @@ def convert_file(
         f.write(final_html)
     print(f"Converted {input_path} -> {output_path}")
     return
+
+def _convert_filename(input_path    :str):
+    base = os.path.splitext(input_path)[0]
+    filename = os.path.basename(base)
+    if filename == "index":
+        return os.path.join(os.path.dirname(input_path), "index.html")
+    else:
+        return f"{base}{BUILT_HTML_EXTENSION}"
 
 def convert_directory(
         input_dir   :str,
@@ -99,13 +107,15 @@ def convert_directory(
 ###########
 
 def clean_md_html_files(
-        root    :str    =".",
-        force   :bool   =False
+        root            :str    =".",
+        remove_index    :bool   =False,
+        force           :bool   =False
 ):
     files_to_remove = []
     for dirpath, _, filenames in os.walk(root):
         for fname in filenames:
-            if fname.endswith(BUILT_HTML_EXTENSION):
+            if (fname.endswith(BUILT_HTML_EXTENSION)
+                or (remove_index and fname.endswith("index.html"))):
                 fpath = os.path.join(dirpath, fname)
                 files_to_remove.append(fpath)
     if not files_to_remove:
@@ -130,21 +140,25 @@ def clean_md_html_files(
 
 def print_help():
     print(f"""
-obsidian-md-to-html
+obsidian-md-html
 
 Usage:
-    python main.py [<input.md|input_dir>] [--links] [--mathjax] [--template <template.html>] [--verbose] [--help]
+    obsidian-md-html [<input.md|input_dir>] [--taglinks] [--mathjax] [--template <template.html>] [--verbose] [--help]
+    obsidian-md-html --clean [--force] [--index]
 
 Arguments:
     <input.md>       Input markdown file to convert (outputs <input>{BUILT_HTML_EXTENSION}).
     <input_dir>      Directory to recursively convert all .md files (default: current directory).
                      Outputs <file{BUILT_HTML_EXTENSION}> adjacent to each source file.
 Options:
-    --links                     Convert tags to clickable <a> elements (for static HTML sites).
+    --taglinks                  Convert tags to clickable <a> elements (for static HTML sites).
     --mathjax                   Add MathJax script for math rendering if math blocks/inlines are detected.
     --template <template.html>  Use a custom HTML template file (default: template.html).
     --verbose                   Print debug output.
     --help, -h                  Show this help message and exit.
+    --clean                     Remove all built files (use "--force" or "-f" to bypass checks; use "--index" or "-i" to remove "index.html")
+    --force, -f                 Neglect user double-checking during "--clean"
+    --index, -i                 Remove "index.html" during "--clean"
 
 Notes:
     - If no input is provided, the current directory is converted.
@@ -153,11 +167,12 @@ Notes:
     - Output HTML files always use the <input>{BUILT_HTML_EXTENSION}(default:".md.html") naming convention for safe cleanup.
 
 Examples:
-    python main.py                              # Convert all .md files in current directory
-    python main.py notes                        # Convert all .md in 'notes' directory
-    python main.py README.md                    # Convert single file (outputs README{BUILT_HTML_EXTENSION})
-    python main.py --links --mathjax            # Convert all .md in current directory with tag links and math
-    python main.py --template mytemplate.html   # Use custom template
+    obsidian-md-html                                # Convert all .md files in current directory
+    obsidian-md-html notes                          # Convert all .md in 'notes' directory
+    obsidian-md-html README.md                      # Convert single file (outputs README{BUILT_HTML_EXTENSION})
+    obsidian-md-html --taglinks --mathjax           # Convert all .md in current directory with tag links and math
+    obsidian-md-html --template mytemplate.html     # Use custom template
+    obsidian-md-html --clean -f -i                  # Remove all built files immediatly, including "index.html"
 """)
 
 ########
@@ -171,9 +186,10 @@ def main():
         sys.exit(0)
     if '--clean' in args:
         force = '--force' in args or '-f' in args
-        clean_md_html_files(force=force)
+        remove_index = '--index' in args or '-i' in args
+        clean_md_html_files(force=force, remove_index=remove_index)
         sys.exit(0)
-    use_links = '--links' in args
+    use_links = '--taglinks' in args
     use_mathjax = '--mathjax' in args
     verbose = '--verbose' in args
     template_path = DEFAULT_TEMPLATE_FILE

@@ -1,5 +1,6 @@
 # First-party
 from collections import defaultdict
+from os import path
 from urllib.parse import quote
 import re
 import html
@@ -67,7 +68,11 @@ def _convert_md_href_to_html(
     if base.lower().endswith('.md'):
         base = base[:-3]
     base_encoded = quote(base, safe="/")
-    href = f"{base_encoded}{BUILT_HTML_EXTENSION}"
+    # Unique case for "index.html" to ensure it matches naming convention
+    if path.basename(base_encoded) == "index":
+        href = f"{base_encoded}.html"
+    else:
+        href = f"{base_encoded}{BUILT_HTML_EXTENSION}"
     if anchor:
         slug = _slugify_heading(anchor)
         href += f"#{slug}"
