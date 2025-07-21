@@ -116,3 +116,4 @@ Some code: `int x = 10`
 
 # Test Pathing
 [[test_2]]
+[[non_existent_test]]

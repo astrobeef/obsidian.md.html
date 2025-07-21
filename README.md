@@ -82,4 +82,7 @@ I'm going to make this an option: use links (for those neglecting JavaScript) or
 
 Math inline/blocks are in a unique position amongst all of the conversions because math cannot be rendered natively in HTML. Some sort of renderer is required, such as [MathJax](https://docs.mathjax.org/en/latest/web/start.html). While this project is not meant to implement any sort of styling, it feels incomplete to leave out math rendering. But since it goes against the premise of the project to include any JS, I have set up an option to embed the MathJax CDN into files which display math (even if the option is enabled, it will not be embeded into pages which don't use math inline/blocks).
 - As of now, MathJax can be enabled during conversion with the CLI option `--mathjax`. Otherwise it is excluded and it is up to the user to set up math rendering.
-- Regardless, math inline/blocks are encapsulated with distinct classes so a user can handle them as they see fit. 
+- Regardless, math inline/blocks are encapsulated with distinct classes so a user can handle them as they see fit.
+
+## Non-existent Markdown Links
+In Obsidian, it's possible for a wikilink to have no corresponding markdown file. In this case, the link is given the "#" href path by default, but this can be set to any path in the constants.py file. The link is also given a unique class to differentiate it from regular wikilinks, making it easy to style individually.

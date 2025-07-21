@@ -26,7 +26,8 @@ def replace_wikilinks(
         inner = match.group(1)
         target, display = _parse_obsidian_link(inner)
         href = _convert_md_href_to_html(target, file_index, root)
-        html = f'<a href="{href}" class="{WIKILINK_LINK_CLASS}">{display}</a>'
+        link_class = WIKILINK_LINK_CLASS if NOREF_WIKILINK_HREF != href else NOREF_WIKILINK_CLASS
+        html = f'<a href="{href}" class="{link_class}">{display}</a>'
         if verbose:
             print(f'Converted wikilink "[[{inner}]]" to "{html}"')
         return html
@@ -66,16 +67,33 @@ def _slugify_heading(text :str):
     text = text.strip('-')
     return text
 
+def _markdown_file_exists(
+        base        :str,
+        file_index  :defaultdict,
+        current_dir :str
+) -> bool:
+    if base.endswith(".md") or "." not in base:
+        try:
+            resolved = resolve_obsidian_path(base, file_index, current_dir)
+        except FileNotFoundError:
+            return False
+        return bool(resolved)
+    raise ValueError(f"Parameter 'base' is not markdown: '{base}'")
+
 def _convert_md_href_to_html(
-        target: str,
-        file_index: defaultdict,
-        current_dir: str,
+        target      :str,
+        file_index  :defaultdict,
+        current_dir :str,
 ) -> str:
     """
     Build the final href for a markdown file,
     using the relative path returned by `resolve_obsidian_path`.
+    \nReturns HTML href
     """
     base, anchor, block = _split_anchor_and_block(target)
+    # A wikilink can reference a non-existent markdown file in Obsidian
+    if not _markdown_file_exists(base, file_index, current_dir):
+        return NOREF_WIKILINK_HREF  # `quote()` return neglected to avoid unnecessary encoding and make direct checks against the constant reliable
     rel_path = resolve_obsidian_path(base, file_index, current_dir)
     if rel_path.lower().endswith(".md"):
         rel_path = rel_path[:-3]
@@ -85,13 +103,14 @@ def _convert_md_href_to_html(
     else:
         href = f"{rel_path}{BUILT_HTML_EXTENSION}"
     fragment = ""
+    href_encoded = quote(href, safe="/")
     if block:  # block IDs should go before anchors due to Obsidian
         fragment = f"^{block}"
     elif anchor:
         fragment = f"#{_slugify_heading(anchor)}"
     if fragment:
-        href += fragment
-    return quote(href, safe="/")
+        href_encoded += fragment
+    return href_encoded
 
 def _has_block_ref(
         heading :str,
