@@ -54,7 +54,8 @@ def _try_resolve_markdown_path(
     if not candidates:
         # If no extension (as is common in Obsidian for markdown), try adding ".md"
         if '.' not in link_text:
-            alt_md = link_text + '.md'
+            link_text += '.md'
+            alt_md = link_text
             candidates = file_map.get(alt_md.lower())
             return _try_resolve_markdown_path(link_text, file_map, candidates)
         else:
