@@ -43,12 +43,20 @@ def _parse_obsidian_link(inner :str):
         target, display = inner, inner
     return target.strip(), display.strip()
 
-def _split_anchor(target :str):
+def _split_anchor_and_block(target: str
+) -> tuple[str, str | None, str | None]:
+    """
+    Returns (base, anchor, block_id), splitting on # and ^ if present.
+    """
+    anchor, block = None, None
+    # Split block first (since ^ can appear after #)
+    if "^" in target:
+        target, block = target.split("^", 1)
+        block = block.strip()
     if "#" in target:
-        base, anchor = target.split("#", 1)
-        return base.strip(), anchor.strip()
-    else:
-        return target.strip(), None
+        target, anchor = target.split("#", 1)
+        anchor = anchor.strip()
+    return target.strip(), anchor, block
 
 def _slugify_heading(text :str):
     """Matches Python-Markdown TOC/Obsidian style: lowercase, dashes for spaces, strip most punctuation."""
@@ -59,26 +67,31 @@ def _slugify_heading(text :str):
     return text
 
 def _convert_md_href_to_html(
-        target              :str,
-        file_index          :defaultdict,
-        root                :str,
+        target: str,
+        file_index: defaultdict,
+        current_dir: str,
 ) -> str:
-    resolved_path = resolve_obsidian_path(target, file_index, root) if file_index else target
-    base, anchor = _split_anchor(resolved_path)
-    if base.lower().endswith('.md'):
-        base = base[:-3]
-    base_encoded = quote(base, safe="/")
+    """
+    Build the final href for a markdown file,
+    using the relative path returned by `resolve_obsidian_path`.
+    """
+    base, anchor, block = _split_anchor_and_block(target)
+    rel_path = resolve_obsidian_path(base, file_index, current_dir)
+    if rel_path.lower().endswith(".md"):
+        rel_path = rel_path[:-3]
     # Unique case for "index.html" to ensure it matches naming convention
-    if path.basename(base_encoded) == "index":
-        href = f"{base_encoded}.html"
+    if path.basename(rel_path) == "index":
+        href = f"{rel_path}.html"
     else:
-        href = f"{base_encoded}{BUILT_HTML_EXTENSION}"
-    if anchor:
-        slug = _slugify_heading(anchor)
-        href += f"#{slug}"
-    return href
-
-### Block refs ###
+        href = f"{rel_path}{BUILT_HTML_EXTENSION}"
+    fragment = ""
+    if block:  # block IDs should go before anchors due to Obsidian
+        fragment = f"^{block}"
+    elif anchor:
+        fragment = f"#{_slugify_heading(anchor)}"
+    if fragment:
+        href += fragment
+    return quote(href, safe="/")
 
 def _has_block_ref(
         heading :str,
