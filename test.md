@@ -113,3 +113,6 @@ Some code: `int x = 10`
 ![[example.ogg]]
 ![[example.mp4]]
 ![[example.pdf]]
+
+# Test Pathing
+[[test_2]]

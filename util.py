@@ -35,34 +35,55 @@ def should_ignore_files(rel_path, patterns, is_dir=False):
                 return True
     return False
 
-def build_file_index(base_dir) -> defaultdict:
+def build_file_index(base_dir: str) -> defaultdict:
     """
     Scans base_dir and returns {lowercase filename: [relative_path, ...]}
     """
     file_map = defaultdict(list)
-    for root, _dirs, files in os.walk(base_dir):
+    base_dir_abs = os.path.abspath(base_dir)
+    for root, _dirs, files in os.walk(base_dir_abs):
         for name in files:
-            rel_path = os.path.relpath(os.path.join(root, name), base_dir)
-            file_map[name.lower()].append(rel_path)
+            file_map[name.lower()].append(os.path.join(root, name))
     return file_map
+
+def _try_resolve_markdown_path(
+        link_text   :str,
+        file_map    :defaultdict,
+        candidates
+):
+    if not candidates:
+        # If no extension (as is common in Obsidian for markdown), try adding ".md"
+        if '.' not in link_text:
+            alt_md = link_text + '.md'
+            candidates = file_map.get(alt_md.lower())
+            return _try_resolve_markdown_path(link_text, file_map, candidates)
+        else:
+            raise FileNotFoundError(f"No candidate for Obsidian link: {link_text}")           # nothing found
+    return candidates
 
 def resolve_obsidian_path(
         link_text   :str,
         file_map    :defaultdict,
-        root        :str
+        current_dir :str
 ) -> str:
     """
     Given 'image.png', 'some/dir', and the file_map, return best relative path for the link (to match Obsidian's similar path resolution system).
     """
+    current_dir = os.path.abspath(current_dir)
     candidates = file_map.get(link_text.lower())
     if not candidates:
-        return link_text.replace("\\", "/")
+        candidates = _try_resolve_markdown_path(link_text, file_map, candidates)
     if len(candidates) == 1:
-        return candidates[0].replace("\\", "/")
-    current_dir_parts = os.path.normpath(root).split(os.sep)
-    for i in range(len(current_dir_parts), 0, -1):
-        prefix = os.path.join(*current_dir_parts[:i])
-        for candidate in candidates:
-            if candidate.startswith(prefix):
-                return candidate.replace("\\", "/")
-    return candidates[0].replace("\\", "/")
+        # single match -> easy
+        return os.path.relpath(candidates[0], current_dir).replace("\\", "/")
+    else:
+        # several matches -> prefer the one that shares the longest prefix (Obsidian heuristics)
+        best = None
+        best_len = -1
+        for cand in candidates:
+            common = os.path.commonpath([current_dir, cand])
+            length = len(common)
+            if length > best_len:
+                best = cand
+                best_len = length
+        return os.path.relpath(best, current_dir).replace("\\", "/")
