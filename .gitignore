@@ -5,3 +5,4 @@ _media/
 __pycache__
 build/
 obsidian_md_html.egg-info
+test/
