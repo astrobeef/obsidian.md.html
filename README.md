@@ -1,10 +1,10 @@
 # obsidian-md-html
 
-Convert any [Obsidian](https://obsidian.md/) vault (or a single note) to plain, template-ready **HTML** from the command line.
+Convert any [Obsidian](https://obsidian.md/) vault (or a single note) to plain, template-ready **HTML** from the command line. Handles Obsidian's unique markdown handlings (such as [wikilinks](https://help.obsidian.md/links)) and provides clear types/classes/data for Obsidian specific properties (such as [tags](https://help.obsidian.md/tags)). This does not implement Obsidian features (such as the [interactive graph](https://help.obsidian.md/plugins/graph)), but it does lay the foundation for your own implementation.
 
 The tool writes side-by-side HTML files:
-note.md        →  note.md.html
-index.md       →  index.html   (special case)
+- note.md        →  note.md.html
+- index.md       →  index.html   (special case)
 
 ---
 
