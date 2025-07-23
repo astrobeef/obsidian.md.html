@@ -16,7 +16,7 @@ Each feature gets a sensible HTML structure. CSS-hook classes are generated, but
 This tool is not published to PyPI because it is just a hobby project, but it's robust enough for me to use regularly.
 
 ## Example
-I use this tool to build my Github Page: [astrobeef.github.io](https://astrobeef.github.io/Obsidian%20Markdown%20to%20HTML%20Converter.md.html)
+I use this tool to build my Github Page: [astrobeef.github.io](https://astrobeef.github.io/Projects/Obsidian%20Markdown%20to%20HTML%20Converter.md.html)
 
 ## Dependencies
 - [markdown](https://pypi.org/project/Markdown/)
