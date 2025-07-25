@@ -62,6 +62,10 @@ obsidian-md-html --clean --index
 | `--verbose`            | print debug messages                                                                             |
 | `--clean [-f] [-i]`    | delete all generated `*.md.html` files (`-i` also removes `index.html`, `-f` skips confirmation) |
 
+## Global CSS (Optional)
+
+If you include `{global_css}` in your template and a `global.css` file in your root directory, then it will be automatically embed into all HTML files. The name of the css file can be changes in constants.py.
+
 ## Ignoring Files
 
 Add to the .convertignore (same syntax as .gitignore) skip files or folders during conversion.

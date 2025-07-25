@@ -4,6 +4,7 @@ PREVIEW_LENGTH = 512#characters
 CONVERT_IGNORE_LIST_FILE    = ".convertignore"
 BUILT_HTML_EXTENSION        = ".md.html"
 DEFAULT_TEMPLATE_FILE       = "template.html"
+DEFAULT_GLOBAL_CSS_FILE     = "global.css"
 
 # Classes
 EMBED_MARKDOWN_CLASS        = "embed-markdown"

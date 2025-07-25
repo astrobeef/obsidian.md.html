@@ -6,7 +6,11 @@ import html
 # Local
 from pipeline import convert_markdown_to_html
 from util import parse_ignore_file, should_ignore_files
-from constants import CONVERT_IGNORE_LIST_FILE, BUILT_HTML_EXTENSION, DEFAULT_TEMPLATE_FILE
+from constants import (
+    CONVERT_IGNORE_LIST_FILE,
+    BUILT_HTML_EXTENSION,
+    DEFAULT_TEMPLATE_FILE,
+    DEFAULT_GLOBAL_CSS_FILE)
 from util import build_file_index
 
 ############
@@ -23,10 +27,16 @@ def load_template(path=None):
     else:
         return None
 
-def apply_template(content, title="", template_path=None):
+def apply_template(content, title="", template_path=None, css_path=None):
     template = load_template(template_path)
     if template is None:
         return content
+    if "{global_css}" in template:
+        if css_path:
+            css_tag = f'<link rel="stylesheet" href="{css_path}">'
+        else:
+            raise ValueError(f"Could not get css path \"{css_path}\"")
+        template = template.replace("{global_css}", css_tag)
     return template.format(
         title=html.escape(title),
         content=content
@@ -42,6 +52,7 @@ def convert_file(
         use_mathjax :bool,
         file_index  :defaultdict,
         root        :str,
+        site_root   :str,
         verbose     :bool = False,
         template_path :str = DEFAULT_TEMPLATE_FILE,
 ) -> None:
@@ -57,7 +68,13 @@ def convert_file(
         verbose                 =verbose,
     )
     title = os.path.splitext(os.path.basename(input_path))[0]
-    final_html = apply_template(html, title=title, template_path=template_path)
+    css_abs = os.path.join(site_root, DEFAULT_GLOBAL_CSS_FILE)
+    css_rel = (
+        os.path.relpath(css_abs, root).replace("\\", "/")
+        if os.path.isfile(css_abs)
+        else None
+    )
+    final_html = apply_template(html, title=title, template_path=template_path, css_path=css_rel)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(final_html)
     print(f"Converted {input_path} -> {output_path}")
@@ -98,6 +115,7 @@ def convert_directory(
                     use_mathjax     = use_mathjax,
                     file_index      = file_index,
                     root            = root,
+                    site_root       = input_dir,
                     verbose         = verbose,
                     template_path   = template_path)
     return
@@ -209,10 +227,9 @@ def main():
         if not input_path.lower().endswith('.md'):
             print("Error: Input file must be a markdown (.md) file.")
             sys.exit(1)
-        file_dir = os.path.dirname(os.path.abspath(input_path))
-        file_index = build_file_index(file_dir)
-        root = file_dir
-        convert_file(input_path, use_links, use_mathjax, verbose, template_path, file_index, root)
-
+        file_dir    = os.path.dirname(os.path.abspath(input_path))
+        file_index  = build_file_index(file_dir)
+        root        = file_dir
+        convert_file(input_path=input_path, use_links=use_links, use_mathjax=use_mathjax, file_index=file_index, root=root, site_root=root, verbose=verbose, template_path=template_path)
 if __name__ == "__main__":
     main()
