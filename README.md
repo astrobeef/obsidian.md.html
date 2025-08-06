@@ -22,7 +22,7 @@ I use this tool to build my Github Page: [astrobeef.github.io](https://astrobeef
 - [markdown](https://pypi.org/project/Markdown/)
 - [pymdown-extensions](https://pypi.org/project/pymdown-extensions/)
 
-## Install & update
+## Install & Update
 
 ```bash
 # clone fork or this repo
@@ -37,6 +37,12 @@ pip install --upgrade .
 # remove
 pip uninstall obsidian-md-html
 ```
+
+### Updating After Local Changes
+
+When making local changes to this git project, any new changes can be updated to the package by running:
+
+`git install --upgrade .`
 
 ## Quick Use
 ```bash
