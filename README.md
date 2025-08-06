@@ -70,7 +70,11 @@ obsidian-md-html --clean --index
 
 ## Global CSS (Optional)
 
-If you include `{global_css}` in your template and a `global.css` file in your root directory, then it will be automatically embed into all HTML files. The name of the css file can be changes in constants.py.
+If you include `{global_css}` in your template and a `global.css` file in your root directory (file name/path can be adjusted in `constants.py`), then it will be automatically embed into all HTML files.
+
+## Global JS (Optional)
+
+If you include `{global_js}` or `{global_js_module}` (to use modern `type="module"`) in your template and a `global.js` file in your root directory (file name/path can be adjusted in `constants.py`), then it will be automatically embed into all HTML files.
 
 ## Ignoring Files
 
