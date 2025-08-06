@@ -5,6 +5,7 @@ CONVERT_IGNORE_LIST_FILE    = ".convertignore"
 BUILT_HTML_EXTENSION        = ".md.html"
 DEFAULT_TEMPLATE_FILE       = "template.html"
 DEFAULT_GLOBAL_CSS_FILE     = "global.css"
+DEFAULT_GLOBAL_JS_FILE      = "global.js"
 
 # Classes
 EMBED_MARKDOWN_CLASS        = "embed-markdown"

@@ -10,7 +10,8 @@ from constants import (
     CONVERT_IGNORE_LIST_FILE,
     BUILT_HTML_EXTENSION,
     DEFAULT_TEMPLATE_FILE,
-    DEFAULT_GLOBAL_CSS_FILE)
+    DEFAULT_GLOBAL_CSS_FILE,
+    DEFAULT_GLOBAL_JS_FILE)
 from util import build_file_index
 
 ############
@@ -27,7 +28,13 @@ def load_template(path=None):
     else:
         return None
 
-def apply_template(content, title="", template_path=None, css_path=None):
+def apply_template(
+        content,
+        title           ="",
+        template_path   =None,
+        css_path        =None,
+        js_path         =None
+):
     template = load_template(template_path)
     if template is None:
         return content
@@ -37,6 +44,18 @@ def apply_template(content, title="", template_path=None, css_path=None):
         else:
             raise ValueError(f"Could not get css path \"{css_path}\"")
         template = template.replace("{global_css}", css_tag)
+    if "{global_js_module}" in template:
+        if js_path:
+            js_tag = f'<script type="module" src="{js_path}"></script>'
+        else:
+            raise ValueError(f"Could not get js path \"{js_path}\"")
+        template = template.replace("{global_js_module}", js_tag)
+    elif "{global_js}" in template:
+        if js_path:
+            js_tag = f'<script src="{js_path}"></script>'
+        else:
+            raise ValueError(f"Could not get js path \"{js_path}\"")
+        template = template.replace("{global_js}", js_tag)
     return template.format(
         title=html.escape(title),
         content=content
@@ -45,6 +64,19 @@ def apply_template(content, title="", template_path=None, css_path=None):
 ##############
 # CONVERSION #
 ##############
+
+def _build_relative_path(
+        path        :str,
+        *,
+        root        :str,
+        site_root   :str,
+) -> str | None:
+    absolute = os.path.join(site_root, path)
+    return (
+        os.path.relpath(absolute, root).replace("\\", "/")
+        if os.path.isfile(absolute)
+        else None
+    )
 
 def convert_file(
         input_path  :str,
@@ -68,13 +100,9 @@ def convert_file(
         verbose                 =verbose,
     )
     title = os.path.splitext(os.path.basename(input_path))[0]
-    css_abs = os.path.join(site_root, DEFAULT_GLOBAL_CSS_FILE)
-    css_rel = (
-        os.path.relpath(css_abs, root).replace("\\", "/")
-        if os.path.isfile(css_abs)
-        else None
-    )
-    final_html = apply_template(html, title=title, template_path=template_path, css_path=css_rel)
+    css_rel = _build_relative_path(DEFAULT_GLOBAL_CSS_FILE, root=root, site_root=site_root)
+    js_rel = _build_relative_path(DEFAULT_GLOBAL_JS_FILE, root=root, site_root=site_root)
+    final_html = apply_template(html, title=title, template_path=template_path, css_path=css_rel, js_path=js_rel)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(final_html)
     print(f"Converted {input_path} -> {output_path}")
