@@ -16,23 +16,34 @@ from util import resolve_obsidian_path
 ## Wikilinks ##
 ###############
 
-def replace_wikilinks(
-        text_md     :str,
-        file_index  :defaultdict,
-        root        :str,
-        verbose     :bool = False
-) -> str:
+NON_MD_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp",
+                     ".mp3", ".wav", ".ogg", ".flac", ".m4a", ".aac", ".opus",
+                     ".mp4", ".webm", ".ogv", ".mov", ".mkv"}
+
+def replace_wikilinks(text_md: str, file_index: defaultdict, root: str, verbose: bool = False) -> str:
     def i_replace(match):
         inner = match.group(1)
         target, display = _parse_obsidian_link(inner)
-        href = _convert_md_href_to_html(target, file_index, root)
-        link_class = WIKILINK_LINK_CLASS if NOREF_WIKILINK_HREF != href else NOREF_WIKILINK_CLASS
-        html = f'<a href="{href}" class="{link_class}">{display}</a>'
+        base, anchor, block = _split_anchor_and_block(target)
+
+        ext = path.splitext(base)[1].lower()
+        if ext and ext != ".md" and ext in NON_MD_EXTENSIONS:
+            resolved = resolve_obsidian_path(base, file_index, root)
+            href = quote(resolved, safe="/")
+            link_class = WIKILINK_LINK_CLASS
+            target_attr = 'target="_blank"'
+        else:
+            href = _convert_md_href_to_html(target, file_index, root)
+            link_class = WIKILINK_LINK_CLASS if NOREF_WIKILINK_HREF != href else NOREF_WIKILINK_CLASS
+            target_attr = ''
+
+        html_out = f'<a href="{href}" class="{link_class}"{target_attr}>{display}</a>'
         if verbose:
-            print(f'Converted wikilink "[[{inner}]]" to "{html}"')
-        return html
-    # regex to find all wikilinks [[<anything>]]
+            print(f'Converted wikilink "[[{inner}]]" to "{html_out}"')
+        return html_out
+
     return re.sub(r"\[\[([^\[\]]+)\]\]", i_replace, text_md)
+
 
 def _parse_obsidian_link(inner :str):
     """
