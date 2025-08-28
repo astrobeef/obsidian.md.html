@@ -18,7 +18,7 @@ from util import resolve_obsidian_path
 
 NON_MD_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp",
                      ".mp3", ".wav", ".ogg", ".flac", ".m4a", ".aac", ".opus",
-                     ".mp4", ".webm", ".ogv", ".mov", ".mkv"}
+                     ".mp4", ".webm", ".ogv", ".mov", ".mkv", ".cpp", ".txt", ".js", ".css"}
 
 def replace_wikilinks(text_md: str, file_index: defaultdict, root: str, verbose: bool = False) -> str:
     def i_replace(match):
